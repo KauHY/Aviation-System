@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="飞机检修远程操作系统 - 专业的航空检修远程协助解决方案">
+    <meta name="keywords" content="飞机检修,远程协助,视频系统,航空维护">
+    <meta name="author" content="航空技术团队">
+    <meta name="robots" content="index, follow">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/style.css">
+    <style>
+        /* 字体优化 */
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-display: swap;
+        }
+        
+        /* 性能优化：CSS变量 */
+        :root {
+            --primary-color: #121212;
+            --secondary-color: #1a365d;
+            --accent-color: #3182ce;
+            --metal-color: #a0aec0;
+            --background-color: #121212;
+            --card-background: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --border-radius: 0;
+            --transition: all 0.3s ease;
+        }
+        
+        /* 平滑滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* 功能区域样式 */
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 0;
+            position: relative;
+        }
+        
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        /* 登录检查遮罩 */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(230,0,18,0.8) 100%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .login-overlay-content {
+            text-align: center;
+            color: white;
+            animation: slideIn 0.8s ease-out;
+        }
+        
+        .login-overlay h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        .login-overlay p {
+            font-size: 18px;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+        
+        .login-overlay .btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 18px 40px;
+            border: 2px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            animation: fadeInUp 1s ease-out 0.6s both;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .login-overlay .btn:hover {
+            background: transparent;
+            transform: translateY(-2px);
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100vh;
+            background: var(--primary-color);
+            z-index: 9999;
+            transition: var(--transition);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--accent-color);
+        }
+        
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+            filter: brightness(0) saturate(100%) invert(60%) sepia(36%) saturate(1875%) hue-rotate(180deg) brightness(90%) contrast(85%);
+        }
+        
+        .sidebar-logo h3 {
+            font-size: 18px;
+            color: white;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .close-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+        
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+        }
+        
+        .sidebar-menu a:hover {
+            background: var(--accent-color);
+            color: white;
+            padding-left: 25px;
+        }
+        
+        /* 导航栏 */
+        .navbar {
+            background: var(--primary-color);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.8s ease-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        .navbar-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .menu-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 10px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+        }
+        
+        .menu-btn:hover {
+            color: var(--accent-color);
+            transition: var(--transition);
+        }
+        
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+        }
+        
+        .navbar-logo img {
+            width: 50px;
+            height: 50px;
+            margin-right: 20px;
+            filter: brightness(0) saturate(100%) invert(60%) sepia(36%) saturate(1875%) hue-rotate(180deg) brightness(90%) contrast(85%);
+        }
+        
+        .navbar-logo h1 {
+            font-size: 24px;
+            color: white;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #48bb78;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        .logout-btn {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+        }
+        
+        .logout-btn:hover {
+            background: white;
+            color: #1a365d;
+        }
+        
+        /* 英雄区域 */
+        .hero-section {
+            color: white;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: url('../PICTURES/anchor/05df1811f8f939ed19814bacb4919f7b.jpeg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1;
+            transition: background 0.5s ease;
+        }
+        
+        .hero-section.logged-in::before {
+            background: rgba(0, 0, 0, 0.85);
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 30px;
+        }
+        
+        .hero-content h1 {
+            font-size: 64px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        .hero-content p {
+            font-size: 24px;
+            margin-bottom: 60px;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+        
+        /* 系统页面通用样式 */
+        .system-section {
+            color: white;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--primary-color);
+            padding: 0 5%;
+        }
+        
+        .system-image {
+            flex: 1;
+            max-width: 45%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .system-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .system-content {
+            flex: 1;
+            max-width: 45%;
+            position: relative;
+            z-index: 2;
+            padding: 40px;
+        }
+        
+        /* 远程视频协助系统背景 */
+        #remote-assist {
+            background: url('../PICTURES/anchor/11b90269e5772ff80f4fe3cab85efa98.jpeg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        
+        #remote-assist::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+        
+        /* 智能检修系统背景 */
+        #intelligent-inspection {
+            background: url('../PICTURES/anchor/3477bf3944e86a2e46b755f921787f43.png') no-repeat center center fixed;
+            background-size: cover;
+        }
+        
+        #intelligent-inspection::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+        
+        /* 航班查询系统背景 */
+        #flight-search {
+            background: url('../PICTURES/anchor/8333eec51e2c015ee27cc5a93546c8e8.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        
+        #flight-search::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+        
+        /* 基于区块链的检修管理系统背景 */
+        #blockchain-management {
+            background: url('../PICTURES/anchor/94aed45bacc004430034033d70dc26fe.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        
+        #blockchain-management::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+        
+        /* 航空器信息查询系统背景 */
+        #aircraft-info {
+            background: url('../PICTURES/anchor/b65b46014c499e05275b72ac4b418221.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        
+        #aircraft-info::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+        
+        .system-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            padding: 0 30px;
+            transition: transform 0.5s ease;
+        }
+        
+        /* 交替布局 */
+        #remote-assist .system-content,
+        #flight-search .system-content,
+        #aircraft-info .system-content {
+            margin: 0 10% 0 auto;
+        }
+        
+        #intelligent-inspection .system-content,
+        #blockchain-management .system-content {
+            margin: 0 auto 0 10%;
+        }
+        
+        /* 悬停效果 */
+        .system-section:hover::after {
+            transform: scale(1.05);
+        }
+        
+        .system-section:hover .system-content {
+            transform: translateY(-10px);
+        }
+        
+        .system-content h2 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+        }
+        
+        .system-content p {
+            font-size: 18px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .system-content .btn {
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 18px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn.primary {
+            background: var(--accent-color);
+            color: white;
+            border: 2px solid var(--accent-color);
+        }
+        
+        .btn.primary:hover {
+            background: transparent;
+            transform: translateY(-3px);
+        }
+        
+        .btn.secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn.secondary:hover {
+            background: white;
+            color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+        
+        /* 系统页面样式调整 */
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 确保系统页面内容布局正确 */
+        .system-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            margin: 0 10% 0 auto;
+            padding: 0 30px;
+        }
+        
+        /* 移除所有不需要的样式 */
+        
+        /* 页脚 */
+        footer {
+            background: var(--primary-color);
+            color: white;
+            padding: 60px 0;
+            border-top: 5px solid var(--accent-color);
+        }
+        
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-info h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .footer-info p {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: var(--transition);
+        }
+        
+        .footer-links a:hover {
+            color: var(--accent-color);
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .hero-content h1 {
+                font-size: 48px;
+            }
+            
+            .quick-access-title h2,
+            .features-title h2,
+            .performance-title h2 {
+                font-size: 32px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .navbar {
+                padding: 15px 30px;
+                flex-direction: column;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .hero-content {
+                margin: 0 auto;
+                text-align: center;
+            }
+            
+            .hero-content h1 {
+                font-size: 36px;
+            }
+            
+            .hero-buttons {
+                justify-content: center;
+            }
+            
+            .footer-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 40px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 150px 0 80px;
+            }
+            
+            .hero-content h1 {
+                font-size: 28px;
+            }
+            
+            .hero-content p {
+                font-size: 18px;
+            }
+            
+            .btn {
+                padding: 15px 30px;
+                font-size: 14px;
+            }
+            
+            .quick-access,
+            .system-features,
+            .performance-section {
+                padding: 80px 0;
+            }
+            
+            .quick-access-title h2,
+            .features-title h2,
+            .performance-title h2 {
+                font-size: 24px;
+            }
+            
+            .quick-access-card,
+            .feature-card {
+                padding: 40px 30px;
+            }
+            
+            .performance-value {
+                font-size: 40px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .navbar-menu {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .navbar-menu a {
+                font-size: 12px;
+            }
+            
+            .hero-content h1 {
+                font-size: 24px;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .quick-access-grid,
+            .features-grid,
+            .performance-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录检查遮罩 -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-overlay-content">
+            <h2>请先登录系统</h2>
+            <p>访问飞机检修远程操作系统需要进行身份验证</p>
+            <a href="/login" class="btn">立即登录</a>
+        </div>
+    </div>
+    
+    <!-- 侧边栏 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path fill='%2348bb78' d='M20 5L5 15V25L20 35L35 25V15L20 5Z'/><path fill='%23ffffff' d='M20 10L10 15V25L20 30L30 25V15L20 10Z'/></svg>" alt="Logo">
+                <h3>航链智检</h3>
+            </div>
+            <button class="close-btn" id="close-sidebar">×</button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="#home">航链智检</a>
+            <a href="#remote-assist">远程视频协助系统</a>
+            <a href="#intelligent-inspection">智能检修系统</a>
+            <a href="#flight-search">航班查询系统</a>
+            <a href="#blockchain-management">基于区块链的检修管理系统</a>
+            <a href="#aircraft-info">航空器信息查询系统</a>
+        </div>
+    </div>
+    
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <button class="menu-btn" id="menu-btn">☰</button>
+        </div>
+        <div class="navbar-logo">
+            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path fill='%2348bb78' d='M20 5L5 15V25L20 35L35 25V15L20 5Z'/><path fill='%23ffffff' d='M20 10L10 15V25L20 30L30 25V15L20 10Z'/></svg>" alt="Logo">
+            <h1>航链智检</h1>
+        </div>
+        <div class="navbar-user">
+            <div class="user-info">
+                <div class="user-avatar" id="user-avatar">U</div>
+                <div class="user-details">
+                    <div class="user-name" id="user-name">技术人员</div>
+                    <div class="user-role">系统用户</div>
+                </div>
+            </div>
+            <button class="logout-btn" id="logout-btn">退出登录</button>
+        </div>
+    </nav>
+    
+    <!-- 航链智检主页 -->
+    <div class="hero-section section" id="home">
+        <div class="hero-content">
+            <h1>航链智检</h1>
+            <p>专业的航空检修远程协助解决方案，确保飞行安全与高效运维</p>
+        </div>
+    </div>
+    
+    <!-- 远程视频协助系统 -->
+    <div class="system-section section" id="remote-assist">
+        <div class="system-image">
+            <img src="../PICTURES/load/系统概念图设计需求 (1).png" alt="远程视频协助系统">
+        </div>
+        <div class="system-content">
+            <h2>远程视频协助系统</h2>
+            <p>实时连接现场技术人员，提供远程指导和检修支持，减少停机时间，提高维修效率。通过高清视频传输和实时交互功能，专家可以远程查看现场情况，提供精准的技术指导。</p>
+            <a href="/video-system" class="btn primary">启动系统</a>
+        </div>
+    </div>
+    
+    <!-- 智能检修系统 -->
+    <div class="system-section section" id="intelligent-inspection">
+        <div class="system-content">
+            <h2>智能检修系统</h2>
+            <p>利用人工智能技术分析上传的图片，快速识别潜在问题，提供专业的检修建议。系统采用先进的计算机视觉和机器学习算法，能够自动检测和分类各类检修问题，提高检修效率和准确性。</p>
+            <a href="/image-inspection" class="btn primary">开始分析</a>
+        </div>
+        <div class="system-image">
+            <img src="../PICTURES/load/系统概念图设计需求 (2).png" alt="智能检修系统">
+        </div>
+    </div>
+    
+    <!-- 航班查询系统 -->
+    <div class="system-section section" id="flight-search">
+        <div class="system-image">
+            <img src="../PICTURES/load/系统概念图设计需求 (3).png" alt="航班查询系统">
+        </div>
+        <div class="system-content">
+            <h2>航班查询系统</h2>
+            <p>快速查询航班详情，支持多条件搜索，实时获取航班状态和执行飞机信息。系统提供详细的航班信息，包括航班号、起降时间、执飞飞机注册号等，并支持查看飞机的检修记录。</p>
+            <a href="/flight-search" class="btn primary">开始查询</a>
+        </div>
+    </div>
+    
+    <!-- 基于区块链的检修管理系统 -->
+    <div class="system-section section" id="blockchain-management">
+        <div class="system-content">
+            <h2>基于区块链的检修管理系统</h2>
+            <p>利用区块链技术确保检修记录的安全性和可追溯性，防止数据篡改，提高可信度。系统实现了检修记录的分布式存储和智能合约管理，确保检修数据的完整性和不可篡改性。</p>
+            <a href="/inspection-management" class="btn primary">进入管理</a>
+        </div>
+        <div class="system-image">
+            <img src="../PICTURES/load/系统概念图设计需求 (4).png" alt="基于区块链的检修管理系统">
+        </div>
+    </div>
+    
+    <!-- 航空器信息查询系统 -->
+    <div class="system-section section" id="aircraft-info">
+        <div class="system-image">
+            <img src="../PICTURES/load/系统概念图设计需求.png" alt="航空器信息查询系统">
+        </div>
+        <div class="system-content">
+            <h2>航空器信息查询系统</h2>
+            <p>详细的航空器信息数据库，包括机型、性能参数、维修历史等，为检修提供参考。系统收录了各类航空器的详细信息，支持按机型、注册号等多维度查询，为检修工作提供全面的技术支持。</p>
+            <a href="/aircraft-info" class="btn primary">查看信息</a>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-info">
+                <h3>航链智检</h3>
+                <p>&copy; 2026 Hanglian Zhijian System</p>
+                <p>安全等级: 机密 | 系统版本: v1.0.0</p>
+            </div>
+            <div class="footer-links">
+                <a href="/video-system">视频系统</a>
+                <a href="/image-inspection">图片检修</a>
+                <a href="/inspection-management">检修管理</a>
+                <a href="/flight-search">航班查询</a>
+                <a href="/aircraft-info">航空器信息</a>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="static/script.js"></script>
+    <script>
+        // 登录检查（默认跳过）
+        function checkLogin() {
+            const currentUser = localStorage.getItem('currentUser');
+            const currentUserRole = localStorage.getItem('currentUserRole');
+            const loginOverlay = document.getElementById('login-overlay');
+            const heroSection = document.querySelector('.hero-section');
+            
+            // 无论是否登录，都隐藏遮罩
+            loginOverlay.style.display = 'none';
+            
+            if (currentUser) {
+                // 已登录，更新用户信息
+                document.getElementById('user-name').textContent = currentUser;
+                document.getElementById('user-avatar').textContent = currentUser.charAt(0).toUpperCase();
+                
+                // 添加登录后的黑色阴影
+                if (heroSection) {
+                    heroSection.classList.add('logged-in');
+                }
+                
+                // 更新用户角色显示
+                const userRoleElement = document.querySelector('.user-role');
+                if (userRoleElement) {
+                    let roleText = '技术人员';
+                    if (currentUserRole === 'manager') {
+                        roleText = '管理人员';
+                    } else if (currentUserRole === 'admin') {
+                        roleText = '总负责人';
+                    }
+                    userRoleElement.textContent = roleText;
+                }
+            } else {
+                // 未登录，使用默认用户信息
+                document.getElementById('user-name').textContent = '技术人员';
+                document.getElementById('user-avatar').textContent = 'U';
+                
+                // 移除登录后的黑色阴影
+                if (heroSection) {
+                    heroSection.classList.remove('logged-in');
+                }
+            }
+        }
+        
+        // 启动视频系统
+        // document.getElementById('remote-assist-btn').addEventListener('click', function() {
+        //     // 跳转到视频系统页面
+        //     window.location.href = '/video-system';
+        // });
+        
+        // 侧边栏控制
+        function setupSidebar() {
+            const menuBtn = document.getElementById('menu-btn');
+            const closeBtn = document.getElementById('close-sidebar');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
+            
+            menuBtn.addEventListener('click', function() {
+                sidebar.classList.add('active');
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                sidebar.classList.remove('active');
+            });
+            
+            // 点击侧边栏链接后关闭侧边栏
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    sidebar.classList.remove('active');
+                });
+            });
+        }
+        
+        // 平滑滚动
+        function smoothScroll() {
+            const links = document.querySelectorAll('a[href^="#"]');
+            
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 100,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        }
+        
+        // 动态数据更新
+        function updateDashboardData() {
+            // 模拟数据更新
+            const taskCount = document.querySelector('.dashboard-card:nth-child(1) .value');
+            const urgentCount = document.querySelector('.dashboard-card:nth-child(2) .value');
+            const avgTime = document.querySelector('.dashboard-card:nth-child(3) .value');
+            
+            if (taskCount && urgentCount && avgTime) {
+                // 模拟任务数变化
+                setInterval(() => {
+                    const currentTasks = parseInt(taskCount.textContent);
+                    const newTasks = currentTasks + Math.floor(Math.random() * 3) - 1;
+                    if (newTasks > 0) {
+                        taskCount.textContent = Math.max(1, newTasks);
+                    }
+                }, 5000);
+                
+                // 模拟紧急任务数变化
+                setInterval(() => {
+                    const currentUrgent = parseInt(urgentCount.textContent);
+                    const newUrgent = currentUrgent + Math.floor(Math.random() * 2) - 1;
+                    if (newUrgent >= 0) {
+                        urgentCount.textContent = Math.max(0, newUrgent);
+                    }
+                }, 3000);
+            }
+        }
+        
+        // 响应式导航菜单
+        function setupResponsiveNav() {
+            const navbar = document.querySelector('.navbar');
+            const menu = document.querySelector('.navbar-menu');
+            
+            // 检测窗口大小变化
+            window.addEventListener('resize', function() {
+                if (window.innerWidth < 768) {
+                    // 移动端菜单
+                    menu.style.flexDirection = 'column';
+                    menu.style.gap = '10px';
+                    menu.style.width = '100%';
+                } else {
+                    // 桌面端菜单
+                    menu.style.flexDirection = 'row';
+                    menu.style.gap = '20px';
+                    menu.style.width = 'auto';
+                }
+            });
+            
+            // 初始检查
+            if (window.innerWidth < 768) {
+                menu.style.flexDirection = 'column';
+                menu.style.gap = '10px';
+                menu.style.width = '100%';
+            }
+        }
+        
+        // 卡片悬停效果增强
+        function enhanceCardInteractions() {
+            const cards = document.querySelectorAll('.dashboard-card, .feature-card, .quick-access-card, .task-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        }
+        
+        // 页面加载时的动画序列
+        function setupPageAnimations() {
+            const elements = document.querySelectorAll('.dashboard-card, .feature-card, .quick-access-card, .task-card');
+            
+            elements.forEach((element, index) => {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    element.style.transition = 'all 0.6s ease';
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }, 100 * index);
+            });
+        }
+        
+        // 性能优化：图片懒加载
+        function setupLazyLoading() {
+            const images = document.querySelectorAll('img');
+            
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const image = entry.target;
+                            image.style.opacity = '1';
+                            imageObserver.unobserve(image);
+                        }
+                    });
+                }, {
+                    rootMargin: '50px'  // 提前50px开始加载
+                });
+                
+                images.forEach(image => {
+                    image.style.opacity = '1';
+                    image.style.transition = 'opacity 0.3s ease';
+                    imageObserver.observe(image);
+                });
+            } else {
+                // 不支持IntersectionObserver的浏览器，直接显示图片
+                images.forEach(image => {
+                    image.style.opacity = '1';
+                });
+            }
+        }
+        
+        // 页面加载时执行
+        window.addEventListener('load', function() {
+            // 延迟执行，确保DOM完全加载
+            setTimeout(function() {
+                checkLogin();
+                setupSidebar();
+                smoothScroll();
+                updateDashboardData();
+                setupResponsiveNav();
+                enhanceCardInteractions();
+                setupPageAnimations();
+                setupLazyLoading();
+                setupLogout();
+            }, 100);
+        });
+        
+        // 设置退出登录功能
+        function setupLogout() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    // 清除本地存储的用户信息
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('currentUserRole');
+                    localStorage.removeItem('token');
+                    
+                    // 跳转到登录页面
+                    window.location.href = '/login';
+                });
+            }
+        }
+        
+        // 页面滚动时的视差效果
+        window.addEventListener('scroll', function() {
+            const scrolled = window.pageYOffset;
+            const parallax = document.querySelector('.hero-section');
+            const speed = scrolled * 0.5;
+            
+            if (parallax) {
+                parallax.style.transform = `translateY(${speed}px)`;
+                
+                // 确保登录后黑色阴影正确应用
+                const currentUser = localStorage.getItem('currentUser');
+                if (currentUser && !parallax.classList.contains('logged-in')) {
+                    parallax.classList.add('logged-in');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

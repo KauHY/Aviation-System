@@ -1,0 +1,3330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>航空器信息 - 飞机检修远程操作系统</title>
+    <link rel="stylesheet" href="/static/unified-header.css">
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        /* 页面容器 */
+        /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* 导航栏 */
+        .navbar {
+            background: rgba(25, 39, 66, 0.95);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.8s ease-out;
+            border: 1px solid rgba(66, 153, 225, 0.2);
+        }
+        
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .menu-toggle {
+            background: rgba(66, 153, 225, 0.2);
+            color: #63b3ed;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        .menu-toggle:hover {
+            background: rgba(66, 153, 225, 0.3);
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+        
+        .navbar-logo h1 {
+            font-size: 18px;
+            margin: 0;
+            color: #63b3ed;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .navbar-menu a {
+            color: #a0aec0;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        
+        .navbar-menu a:hover {
+            color: #63b3ed;
+            background: rgba(66, 153, 225, 0.2);
+        }
+        
+        .navbar-menu a.active {
+            color: #63b3ed;
+            background: rgba(66, 153, 225, 0.3);
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+        }
+        
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+        
+        .navbar-logo h1 {
+            font-size: 20px;
+            color: #63b3ed;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .navbar-menu a {
+            color: #a0aec0;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .navbar-menu a:hover {
+            background: rgba(66, 153, 225, 0.2);
+            color: #63b3ed;
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+        }
+        
+        .navbar-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4299e1, #63b3ed);
+            transition: width 0.3s ease;
+        }
+        
+        .navbar-menu a:hover::after {
+            width: 100%;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2b6cb0, #4299e1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+            transition: transform 0.3s ease;
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(66, 153, 225, 0.6);
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        .logout-btn {
+            background: rgba(66, 153, 225, 0.2);
+            color: #63b3ed;
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(66, 153, 225, 0.3);
+            color: #90cdf4;
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.4);
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeInUp 1s ease-out;
+            position: relative;
+        }
+        
+        .page-header h1 {
+            color: #63b3ed;
+            font-size: 36px;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+            text-shadow: 0 0 15px rgba(66, 153, 225, 0.3);
+        }
+        
+        .page-header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #4299e1, transparent);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+        
+        .page-header p {
+            color: #a0aec0;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+        
+        /* 搜索栏 */
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+        
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            background: rgba(43, 108, 176, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            border-radius: 25px;
+            color: #e2e8f0;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(66, 153, 225, 0.5);
+            box-shadow: 0 0 20px rgba(66, 153, 225, 0.3);
+            background: rgba(43, 108, 176, 0.15);
+        }
+        
+        .search-input::placeholder {
+            color: #a0aec0;
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #2b6cb0, #4299e1);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 16px rgba(66, 153, 225, 0.6);
+        }
+        
+        /* 搜索结果提示 */
+        .search-results {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(43, 108, 176, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            border-radius: 12px;
+            display: none;
+        }
+        
+        .search-results.visible {
+            display: block;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        .search-results h3 {
+            color: #63b3ed;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .search-results-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .search-result-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: rgba(66, 153, 225, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .search-result-item:hover {
+            background: rgba(66, 153, 225, 0.2);
+            border-color: rgba(66, 153, 225, 0.4);
+            transform: translateX(5px);
+        }
+        
+        .search-result-item h4 {
+            color: #63b3ed;
+            margin: 0 0 5px;
+            font-size: 16px;
+        }
+        
+        .search-result-item p {
+            color: #a0aec0;
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 280px;
+            background: rgba(25, 39, 66, 0.95);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            overflow: hidden;
+        }
+        
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #2b6cb0, #4299e1, #63b3ed);
+        }
+        
+        .sidebar h2 {
+            color: #63b3ed;
+            margin-bottom: 25px;
+            font-size: 22px;
+            border-bottom: 2px solid rgba(66, 153, 225, 0.2);
+            padding-bottom: 15px;
+            position: relative;
+        }
+        
+        .sidebar h2::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: #4299e1;
+        }
+        
+        .manufacturer-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .manufacturer-item {
+            margin-bottom: 12px;
+            position: relative;
+        }
+        
+        .manufacturer-link {
+            display: block;
+            padding: 15px 20px;
+            color: #a0aec0;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            background: rgba(43, 108, 176, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+        }
+        
+        .manufacturer-link:hover {
+            background: rgba(66, 153, 225, 0.2);
+            color: #63b3ed;
+            transform: translateX(10px);
+            border-color: rgba(66, 153, 225, 0.4);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
+        }
+        
+        .manufacturer-link.active {
+            background: linear-gradient(135deg, #2b6cb0, #4299e1);
+            color: white;
+            border-color: #4299e1;
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+        }
+        
+        .manufacturer-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: #4299e1;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .manufacturer-link:hover::before {
+            transform: scaleY(1);
+        }
+        
+        .manufacturer-link.active::before {
+            background: white;
+            transform: scaleY(1);
+        }
+        
+        /* 内容区域 */
+        .content-area {
+            flex: 1;
+            background: rgba(25, 39, 66, 0.95);
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .content-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(66, 153, 225, 0.1), transparent 70%);
+            pointer-events: none;
+        }
+        
+        /* 厂家标题 */
+        .manufacturer-header {
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid rgba(66, 153, 225, 0.2);
+            position: relative;
+        }
+        
+        .manufacturer-header h2 {
+            color: #63b3ed;
+            margin: 0;
+            font-size: 32px;
+            position: relative;
+            display: inline-block;
+            text-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+        }
+        
+        .manufacturer-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, #4299e1, #63b3ed);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(66, 153, 225, 0.4);
+        }
+        
+        /* 机型列表 */
+        .aircraft-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        /* 机型卡片 */
+        .aircraft-card {
+            background: rgba(43, 108, 176, 0.1);
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 
+                0 1px 3px rgba(0, 0, 0, 0.12),
+                0 6px 20px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(66, 153, 225, 0.1) inset;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0);
+        }
+        
+        .aircraft-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #2b6cb0, #4299e1, #63b3ed);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+        
+        .aircraft-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(66, 153, 225, 0.1), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        
+        .aircraft-card:hover {
+            transform: perspective(1000px) rotateX(2deg) rotateY(2deg) translateY(-10px);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(66, 153, 225, 0.3) inset;
+            border-color: rgba(66, 153, 225, 0.5);
+            background: rgba(43, 108, 176, 0.15);
+        }
+        
+        .aircraft-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .aircraft-card:hover::after {
+            opacity: 1;
+        }
+        
+        .aircraft-card h3 {
+            color: #63b3ed;
+            margin-bottom: 15px;
+            font-size: 22px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .aircraft-description {
+            color: #a0aec0;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 机型详情 */
+        .aircraft-details {
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .aircraft-details.active {
+            display: block;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        .details-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 35px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .back-btn {
+            background: rgba(66, 153, 225, 0.2);
+            color: #63b3ed;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .back-btn:hover {
+            background: rgba(66, 153, 225, 0.3);
+            color: #90cdf4;
+            transform: translateX(-5px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
+        }
+        
+        .details-title {
+            flex: 1;
+        }
+        
+        .details-title h2 {
+            color: #63b3ed;
+            margin: 0;
+            font-size: 36px;
+            position: relative;
+            text-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+        }
+        
+        .details-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, #4299e1, #63b3ed);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(66, 153, 225, 0.4);
+        }
+        
+        .details-title p {
+            color: #a0aec0;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        
+        /* 飞机图片 */
+        .aircraft-image {
+            width: 100%;
+            max-height: 450px;
+            object-fit: cover;
+            border-radius: 14px;
+            margin-bottom: 35px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s ease;
+            border: 1px solid rgba(66, 153, 225, 0.3);
+        }
+        
+        .aircraft-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(66, 153, 225, 0.5);
+        }
+        
+        /* 详细信息 */
+        .details-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 35px;
+        }
+        
+        .specs-section,
+        .variants-section,
+        .maintenance-section {
+            background: rgba(25, 39, 66, 0.5);
+            padding: 30px;
+            border-radius: 14px;
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 维修记录模态框 */
+        .maintenance-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .maintenance-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .maintenance-modal-content {
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            transform: translateY(-50px);
+            transition: transform 0.3s ease;
+        }
+        
+        .maintenance-modal.active .maintenance-modal-content {
+            transform: translateY(0);
+        }
+        
+        .maintenance-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(66, 153, 225, 0.2);
+        }
+        
+        .maintenance-modal-header h2 {
+            color: #63b3ed;
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .maintenance-modal-close {
+            background: none;
+            border: none;
+            color: #a0aec0;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .maintenance-modal-close:hover {
+            color: #63b3ed;
+            transform: rotate(90deg);
+        }
+        
+        .maintenance-records-list {
+            margin-top: 20px;
+        }
+        
+        .maintenance-record-item {
+            background: rgba(43, 108, 176, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .maintenance-record-item:hover {
+            background: rgba(43, 108, 176, 0.15);
+            border-color: rgba(66, 153, 225, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .maintenance-record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .maintenance-record-title {
+            color: #63b3ed;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .maintenance-record-date {
+            color: #a0aec0;
+            font-size: 14px;
+            background: rgba(66, 153, 225, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        
+        .maintenance-record-description {
+            color: #e2e8f0;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .maintenance-record-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid rgba(66, 153, 225, 0.1);
+        }
+        
+        .maintenance-record-status {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        
+        .maintenance-record-status.completed {
+            background: rgba(56, 161, 105, 0.2);
+            color: #38a169;
+        }
+        
+        .maintenance-record-status.in-progress {
+            background: rgba(222, 102, 30, 0.2);
+            color: #dd6b20;
+        }
+        
+        .maintenance-record-technician {
+            color: #a0aec0;
+            font-size: 14px;
+        }
+        
+        .no-maintenance-records {
+            text-align: center;
+            padding: 40px 0;
+            color: #a0aec0;
+        }
+        
+        .maintenance-loading {
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .maintenance-btn {
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .maintenance-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+        }
+        
+        .specs-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        .specs-list {
+            flex: 1;
+        }
+        
+        .specs-chart {
+            flex: 1;
+            min-height: 300px;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(66, 153, 225, 0.3);
+        }
+        
+        .specs-section::before,
+        .variants-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #2b6cb0, #4299e1, #63b3ed);
+        }
+        
+        .specs-section h3,
+        .variants-section h3 {
+            color: #ffffff;
+            margin-bottom: 25px;
+            font-size: 20px;
+            border-bottom: 2px solid rgba(66, 153, 225, 0.3);
+            padding-bottom: 15px;
+            position: relative;
+        }
+        
+        .specs-section h3::after,
+        .variants-section h3::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: #4299e1;
+        }
+        
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(66, 153, 225, 0.1);
+        }
+        
+        .spec-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .spec-label {
+            color: #e2e8f0;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .spec-value {
+            color: #ffffff;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .variant-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .variant-list li {
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
+        
+        .variant-list li:before {
+            content: '•';
+            color: #4299e1;
+            font-weight: bold;
+            font-size: 18px;
+            position: absolute;
+            left: 0;
+            top: -2px;
+            text-shadow: 0 0 8px rgba(66, 153, 225, 0.5);
+        }
+        
+        /* 对比功能 */
+        /* 选择复选框 */
+        .compare-checkbox {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(66, 153, 225, 0.5);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        
+        .compare-checkbox:hover {
+            border-color: rgba(66, 153, 225, 0.8);
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+        
+        .compare-checkbox.checked {
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            border-color: #4299e1;
+            box-shadow: 0 0 15px rgba(66, 153, 225, 0.6);
+        }
+        
+        .compare-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        /* 对比按钮 */
+        .compare-controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .compare-btn {
+            background: linear-gradient(135deg, #2b6cb0, #4299e1);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            min-width: 180px;
+            justify-content: center;
+        }
+        
+        .compare-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(66, 153, 225, 0.6);
+        }
+        
+        .compare-btn:disabled {
+            background: rgba(66, 153, 225, 0.3);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 对比面板 */
+        .compare-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+        
+        .compare-panel.active {
+            display: block;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        .compare-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(66, 153, 225, 0.2);
+        }
+        
+        .compare-panel-header h3 {
+            color: #63b3ed;
+            margin: 0;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+        }
+        
+        .close-compare-btn {
+            background: rgba(66, 153, 225, 0.2);
+            color: #63b3ed;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+        
+        .close-compare-btn:hover {
+            background: rgba(66, 153, 225, 0.3);
+            color: #90cdf4;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+        
+        /* 对比表格 */
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .compare-table th,
+        .compare-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(66, 153, 225, 0.2);
+        }
+        
+        .compare-table th {
+            color: #63b3ed;
+            font-weight: 600;
+            background: rgba(43, 108, 176, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .compare-table td {
+            color: #a0aec0;
+        }
+        
+        .compare-table tr:hover {
+            background: rgba(43, 108, 176, 0.1);
+        }
+        
+        /* 对比项名称 */
+        .compare-spec-name {
+            font-weight: 600;
+            color: #e2e8f0;
+            min-width: 150px;
+        }
+        
+        /* 对比背景遮罩 */
+        .compare-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1500;
+            display: none;
+        }
+        
+        .compare-overlay.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 30px;
+            color: #a0aec0;
+        }
+        
+        .empty-state h3 {
+            color: #63b3ed;
+            margin-bottom: 15px;
+        }
+        
+        .empty-state p {
+            margin-bottom: 30px;
+        }
+        
+        .empty-state button {
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .empty-state button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+        }
+        
+        /* 加载动画 */
+        .loading {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(43, 108, 176, 0.1);
+            border-top: 4px solid #2b6cb0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 滚动动画 */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* 滚动进度条 */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4299e1, #63b3ed);
+            z-index: 10000;
+            transition: width 0.1s ease;
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+        
+        /* 平滑滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* 增强的悬停效果 */
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4299e1, #63b3ed);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .manufacturer-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .manufacturer-link::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(66, 153, 225, 0.5);
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        
+        .manufacturer-link:hover::before {
+            opacity: 1;
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.8);
+        }
+        
+        /* 按钮悬停效果 */
+        button {
+            transition: all 0.3s ease;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(43, 108, 176, 0.1);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4299e1, #63b3ed);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #2b6cb0, #4299e1);
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+        
+        /* 文本选择效果 */
+        ::selection {
+            background: rgba(66, 153, 225, 0.3);
+            color: #63b3ed;
+        }
+        
+        /* 焦点效果 */
+        *:focus {
+            outline: 2px solid rgba(66, 153, 225, 0.5);
+            outline-offset: 2px;
+        }
+        
+        /* 输入框聚焦效果 */
+        input:focus,
+        textarea:focus {
+            box-shadow: 0 0 20px rgba(66, 153, 225, 0.3);
+        }
+        
+        /* 图片画廊 */
+        .image-gallery {
+            margin-bottom: 35px;
+            position: relative;
+        }
+        
+        .gallery-main {
+            position: relative;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+        }
+        
+        .gallery-main img {
+            width: 100%;
+            max-height: 450px;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+        
+        .gallery-main:hover img {
+            transform: scale(1.02);
+        }
+        
+        .gallery-controls {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            pointer-events: none;
+        }
+        
+        .gallery-control {
+            background: rgba(66, 153, 225, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .gallery-control:hover {
+            background: rgba(66, 153, 225, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .gallery-thumbnails {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(66, 153, 225, 0.5) rgba(43, 108, 176, 0.1);
+        }
+        
+        .gallery-thumbnails::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .gallery-thumbnails::-webkit-scrollbar-track {
+            background: rgba(43, 108, 176, 0.1);
+            border-radius: 3px;
+        }
+        
+        .gallery-thumbnails::-webkit-scrollbar-thumb {
+            background: rgba(66, 153, 225, 0.5);
+            border-radius: 3px;
+        }
+        
+        .gallery-thumbnails::-webkit-scrollbar-thumb:hover {
+            background: rgba(66, 153, 225, 0.8);
+        }
+        
+        .gallery-thumbnail {
+            flex: 0 0 100px;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .gallery-thumbnail:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        .gallery-thumbnail.active {
+            border-color: rgba(66, 153, 225, 0.8);
+            box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
+        }
+        
+        .gallery-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 图片计数器 */
+        .gallery-counter {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* 响应式设计 */
+        /* 平板设备 (768px - 1023px) */
+        @media (max-width: 1023px) {
+            /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+            
+            .navbar {
+                padding: 12px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .navbar-left {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .navbar-menu a {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            
+            .main-content {
+                flex-direction: column;
+                gap: 30px;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-width: none;
+                padding: 20px;
+            }
+            
+            .content-area {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .aircraft-list {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 20px;
+            }
+            
+            .details-content {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .search-container {
+                max-width: 500px;
+            }
+            
+            .compare-controls {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .compare-btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: 160px;
+            }
+        }
+        
+        /* 移动设备 (767px 及以下) */
+        @media (max-width: 767px) {
+            .menu-toggle {
+                display: block;
+            }
+            
+            .navbar {
+                padding: 10px 15px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .navbar-left {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-logo h1 {
+                font-size: 16px;
+            }
+            
+            .navbar-menu {
+                display: none;
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px 0;
+                border-top: 1px solid rgba(66, 153, 225, 0.2);
+                border-bottom: 1px solid rgba(66, 153, 225, 0.2);
+            }
+            
+            .navbar-menu.active {
+                display: flex;
+            }
+            
+            .navbar-menu a {
+                padding: 10px 15px;
+                text-align: center;
+                font-size: 14px;
+            }
+            
+            .navbar-user {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .page-header h1 {
+                font-size: 28px;
+            }
+            
+            .manufacturer-header h2 {
+                font-size: 24px;
+            }
+            
+            .aircraft-card {
+                padding: 20px;
+            }
+            
+            .aircraft-card h3 {
+                font-size: 18px;
+            }
+            
+            .aircraft-description {
+                font-size: 14px;
+            }
+            
+            .details-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .details-title h2 {
+                font-size: 24px;
+            }
+            
+            .aircraft-image {
+                max-height: 300px;
+            }
+            
+            .specs-section,
+            .variants-section {
+                padding: 20px;
+            }
+            
+            .specs-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .specs-chart {
+                min-height: 250px;
+            }
+            
+            .specs-section h3,
+            .variants-section h3 {
+                font-size: 16px;
+            }
+            
+            .spec-item {
+                padding-bottom: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .search-input {
+                padding: 12px 40px 12px 16px;
+                font-size: 14px;
+            }
+            
+            .search-btn {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .compare-controls {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                flex-direction: row;
+                justify-content: center;
+                margin: 20px 0;
+            }
+            
+            .compare-panel {
+                max-width: 95vw;
+                max-height: 90vh;
+                padding: 20px;
+            }
+            
+            .compare-table th,
+            .compare-table td {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .scroll-progress {
+                height: 2px;
+            }
+        }
+        
+        /* 小屏幕移动设备 (480px 及以下) */
+        @media (max-width: 480px) {
+            .page-header h1 {
+                font-size: 24px;
+            }
+            
+            .page-header p {
+                font-size: 14px;
+            }
+            
+            .aircraft-list {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .aircraft-card {
+                padding: 15px;
+            }
+            
+            .aircraft-card h3 {
+                font-size: 16px;
+            }
+            
+            .details-title h2 {
+                font-size: 20px;
+            }
+            
+            .details-title p {
+                font-size: 14px;
+            }
+            
+            .back-btn {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+            
+            .specs-section,
+            .variants-section {
+                padding: 15px;
+            }
+            
+            .spec-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .spec-value {
+                font-size: 14px;
+            }
+            
+            .variant-list li {
+                font-size: 13px;
+                padding-left: 20px;
+            }
+            
+            .search-container {
+                max-width: 100%;
+            }
+            
+            .compare-btn {
+                padding: 10px 16px;
+                font-size: 13px;
+                min-width: 140px;
+            }
+            
+            .compare-table {
+                font-size: 12px;
+            }
+            
+            .compare-table th,
+            .compare-table td {
+                padding: 8px;
+            }
+        }
+        
+        /* 横屏移动设备 */
+        @media (max-height: 480px) and (orientation: landscape) {
+            .aircraft-list {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 15px;
+            }
+            
+            .aircraft-card {
+                padding: 15px;
+            }
+            
+            .details-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .compare-panel {
+                max-height: 85vh;
+            }
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-header h1 {
+                font-size: 28px;
+            }
+            
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: static;
+            }
+            
+            .content-area {
+                padding: 25px;
+            }
+            
+            .details-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .manufacturer-header h2 {
+                font-size: 24px;
+            }
+            
+            .details-title h2 {
+                font-size: 28px;
+            }
+        }
+        
+        /* 科技感背景效果 */
+        .tech-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(135deg, rgba(10, 25, 47, 0.95) 0%, rgba(15, 32, 59, 0.9) 100%),
+                radial-gradient(circle at 10% 20%, rgba(66, 153, 225, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(99, 179, 237, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 50% 50%, rgba(43, 108, 176, 0.05) 0%, transparent 30%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(66, 153, 225, 0.02) 2px,
+                    rgba(66, 153, 225, 0.02) 4px
+                );
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* 背景网格效果 */
+        .tech-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(66, 153, 225, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(66, 153, 225, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 50px 50px;
+            }
+        }
+    </style>
+    <script>
+        // 登录检查
+        function checkLogin() {
+            const currentUser = localStorage.getItem('currentUser');
+            const currentUserRole = localStorage.getItem('currentUserRole');
+            
+            if (!currentUser) {
+                // 未登录，重定向到登录页面
+                // window.location.href = '/login';
+                // 为了测试，暂时不重定向
+                console.log('未登录，使用默认用户');
+                document.getElementById('user-name').textContent = '技术人员';
+                document.getElementById('user-avatar').textContent = '技';
+            } else {
+                // 更新用户信息
+                document.getElementById('user-name').textContent = currentUser;
+                document.getElementById('user-avatar').textContent = currentUser.charAt(0).toUpperCase();
+                
+                // 更新用户角色显示
+                const userRoleElement = document.querySelector('.user-role');
+                if (userRoleElement) {
+                    let roleText = '技术人员';
+                    if (currentUserRole === 'manager') {
+                        roleText = '管理人员';
+                    } else if (currentUserRole === 'admin') {
+                        roleText = '总负责人';
+                    }
+                    userRoleElement.textContent = roleText;
+                }
+            }
+        }
+        
+        // 航空器数据
+        const aircraftData = {
+            boeing: {
+                name: '波音 (Boeing)',
+                aircrafts: [
+                    {
+                        id: '737',
+                        name: '波音 737',
+                        description: '波音737是世界上最畅销的窄体客机系列，主要用于中短途航线。自1967年首飞以来，已经生产了超过10,000架，是民航史上最成功的客机之一。737系列采用了先进的翼型设计和高效的发动机技术，不断进行升级改进，以适应市场需求。最新的737 MAX系列采用了先进的LEAP发动机和翼梢小翼，燃油效率比上一代提高了20%以上。该系列飞机因其可靠性高、运营成本低，成为全球各大航空公司的主力机型，广泛应用于国内和区域航线。',
+                        image: 'PICTURES/BOEING/737.jpeg',
+                        images: [
+                            'PICTURES/BOEING/737.jpeg',
+                            'PICTURES/BOEING/737-800.jpg',
+                            'PICTURES/BOEING/737MAX.jpg'
+                        ],
+                        specs: {
+                            capacity: '100-230人',
+                            range: '5,765-6,570公里',
+                            cruiseSpeed: '840-870 km/h',
+                            wingspan: '35.79米',
+                            length: '39.52米',
+                            height: '12.3米'
+                        },
+                        variants: [
+                            '737-600 - 短机身版本，载客量约100人',
+                            '737-700 - 标准机身版本，载客量约140人',
+                            '737-800 - 延长机身版本，最受欢迎的型号，载客量约180人',
+                            '737-900ER - 进一步延长的机身版本，载客量约215人',
+                            '737 MAX 7/8/9/10 - 新一代燃油效率更高的版本，采用先进的LEAP发动机'
+                        ]
+                    },
+                    {
+                        id: '747',
+                        name: '波音 747',
+                        description: '波音747是世界上第一种宽体客机，以其独特的驼峰设计而闻名，主要用于长途航线。1969年首飞，被誉为"空中皇后"，是民航史上的标志性机型。747的出现彻底改变了航空旅行的格局，使得大规模远程客运成为可能。该机型采用了四引擎布局和宽敞的双层客舱设计，为乘客提供了舒适的飞行体验。尽管随着双引擎宽体客机的兴起，747的客运需求逐渐减少，但它仍然是航空史上最具影响力的机型之一，在货运和特种任务领域仍有广泛应用。',
+                        image: 'PICTURES/BOEING/747.jpeg',
+                        specs: {
+                            capacity: '416-660人',
+                            range: '13,450-14,815公里',
+                            cruiseSpeed: '913 km/h',
+                            wingspan: '68.4米',
+                            length: '76.3米',
+                            height: '19.4米'
+                        },
+                        variants: [
+                            '747-100 - 原始版本，1970年投入使用',
+                            '747-200 - 改进版本，增加了航程和载客量',
+                            '747-300 - 上层客舱延长版本，增加了更多座位',
+                            '747-400 - 现代化版本，机翼上有翼梢小翼，燃油效率更高',
+                            '747-8 - 最新版本，采用先进技术，燃油效率比747-400提高16%'
+                        ]
+                    },
+                    {
+                        id: '757',
+                        name: '波音 757',
+                        description: '波音757是一种中远程窄体客机，具有良好的性能和适应性，可在短跑道上起降。1982年首飞，主要用于中长途航线，以其出色的爬升性能和燃油效率而闻名。757采用了先进的翼型设计和高效的涡轮风扇发动机，具有出色的高原性能和高温环境适应能力。该机型可灵活配置为客运或货运版本，广泛应用于各种航线网络。尽管波音已于2004年停止生产757，但其出色的性能使其仍在许多航空公司服役，尤其适合需要长航程和高可靠性的航线。',
+                        image: 'PICTURES/BOEING/757.jpeg',
+                        specs: {
+                            capacity: '200-295人',
+                            range: '7,240-8,300公里',
+                            cruiseSpeed: '870 km/h',
+                            wingspan: '38.05米',
+                            length: '47.32米',
+                            height: '13.56米'
+                        },
+                        variants: [
+                            '757-200 - 标准版本，载客量约200人',
+                            '757-200PF - 货运版本，最大载重约39吨',
+                            '757-300 - 延长机身版本，载客量约295人'
+                        ]
+                    },
+                    {
+                        id: '767',
+                        name: '波音 767',
+                        description: '波音767是一种中远程宽体客机，主要用于中长途航线，具有良好的燃油效率。1981年首飞，是世界上第一种采用两人制驾驶舱的宽体客机。767采用了先进的空气动力学设计和高效的发动机，具有出色的燃油经济性和运营灵活性。该机型可配置为客运、货运或客货混合版本，广泛应用于各种航线网络。767系列因其可靠性高、运营成本低，成为全球各大航空公司的重要机型，尤其适合中长途国际航线和区域枢纽网络。',
+                        image: 'PICTURES/BOEING/767.jpg',
+                        specs: {
+                            capacity: '210-375人',
+                            range: '11,305-12,200公里',
+                            cruiseSpeed: '870 km/h',
+                            wingspan: '47.57米',
+                            length: '54.94米',
+                            height: '15.85米'
+                        },
+                        variants: [
+                            '767-200 - 标准版本，载客量约210人',
+                            '767-300 - 延长机身版本，载客量约269人',
+                            '767-400ER - 进一步延长的机身版本，载客量约375人',
+                            '767-300F - 货运版本，最大载重约52吨'
+                        ]
+                    },
+                    {
+                        id: '777',
+                        name: '波音 777',
+                        description: '波音777是一种远程宽体客机，是世界上最大的双引擎客机，主要用于长途航线。1994年首飞，采用了许多先进技术，如电传操纵系统和复合材料结构。777系列采用了先进的空气动力学设计和高效的发动机，具有出色的燃油效率和远程飞行能力。该机型配备了宽敞的客舱和先进的机载系统，为乘客提供舒适的长途飞行体验。最新的777X系列采用了折叠翼梢和先进的GE9X发动机，燃油效率比上一代提高了20%以上，成为波音公司的旗舰机型。',
+                        image: 'PICTURES/BOEING/777.jpeg',
+                        specs: {
+                            capacity: '301-426人',
+                            range: '9,700-17,500公里',
+                            cruiseSpeed: '905 km/h',
+                            wingspan: '60.93米',
+                            length: '63.73米',
+                            height: '18.51米'
+                        },
+                        variants: [
+                            '777-200 - 标准版本，载客量约301人',
+                            '777-200ER - 增程版本，航程可达14,316公里',
+                            '777-300 - 延长机身版本，载客量约368人',
+                            '777-300ER - 增程版本，航程可达14,685公里',
+                            '777-8/9 - 新一代777X系列，采用折叠翼梢，燃油效率更高'
+                        ]
+                    },
+                    {
+                        id: '787',
+                        name: '波音 787',
+                        description: '波音787梦想客机是一种现代化的远程宽体客机，采用大量复合材料，具有出色的燃油效率。2011年投入使用，是波音公司的旗舰机型之一。787采用了先进的碳纤维复合材料结构，大幅减轻了飞机重量，提高了燃油效率。该机型配备了最先进的驾驶舱系统和客舱设施，包括更大的窗户、更好的空气流通系统和更安静的客舱环境。787系列因其出色的燃油效率和环保性能，成为全球各大航空公司远程航线的首选机型，开创了航空旅行的新纪元。',
+                        image: 'PICTURES/BOEING/787.jpeg',
+                        specs: {
+                            capacity: '242-330人',
+                            range: '13,620-16,100公里',
+                            cruiseSpeed: '913 km/h',
+                            wingspan: '60.12米',
+                            length: '57.02米',
+                            height: '17.02米'
+                        },
+                        variants: [
+                            '787-8 - 标准版本，载客量约242人',
+                            '787-9 - 延长机身版本，载客量约290人',
+                            '787-10 - 进一步延长的机身版本，载客量约330人'
+                        ]
+                    }
+                ]
+            },
+            airbus: {
+                name: '空客 (Airbus)',
+                aircrafts: [
+                    {
+                        id: 'a320',
+                        name: '空客 A320',
+                        description: '空客A320是一种窄体客机，与波音737竞争，主要用于中短途航线。1988年投入使用，是世界上第一种采用电传操纵系统的客机。A320系列采用了先进的数字飞行控制系统和玻璃驾驶舱，大幅提高了飞行安全性和可靠性。该系列飞机因其出色的燃油效率和运营灵活性，成为全球最受欢迎的单通道客机之一，广泛应用于各大航空公司的国内和区域航线。',
+                        image: 'PICTURES/AirBus/A320.jpeg',
+                        images: [
+                            'PICTURES/AirBus/A320.jpeg',
+                            'PICTURES/AirBus/A320neo.jpg',
+                            'PICTURES/AirBus/A321.jpg'
+                        ],
+                        specs: {
+                            capacity: '107-240人',
+                            range: '5,700-7,800公里',
+                            cruiseSpeed: '840 km/h',
+                            wingspan: '35.8米',
+                            length: '37.57米',
+                            height: '11.76米'
+                        },
+                        variants: [
+                            'A318 - 缩短版本，载客量约107人',
+                            'A319 - 短机身版本，载客量约124人',
+                            'A320 - 标准版本，载客量约150人',
+                            'A321 - 延长机身版本，载客量约185人',
+                            'A320neo系列 - 新一代燃油效率更高的版本，采用LEAP发动机'
+                        ]
+                    },
+                    {
+                        id: 'a330',
+                        name: '空客 A330',
+                        description: '空客A330是一种中远程宽体客机，主要用于中长途航线，与波音767竞争。1994年投入使用，以其可靠性和经济性而闻名。A330采用了先进的翼型设计和高效的涡轮风扇发动机，具有出色的燃油效率和较低的运营成本。该机型配备了现代化的驾驶舱和客舱设施，为乘客提供舒适的飞行体验。A330系列因其良好的通用性，可同时满足客运和货运市场的需求，是全球最受欢迎的宽体客机之一。',
+                        image: 'PICTURES/AirBus/A330.jpg',
+                        specs: {
+                            capacity: '253-406人',
+                            range: '11,750-13,450公里',
+                            cruiseSpeed: '871 km/h',
+                            wingspan: '60.3米',
+                            length: '63.66米',
+                            height: '16.79米'
+                        },
+                        variants: [
+                            'A330-200 - 短机身增程版本，载客量约253人',
+                            'A330-300 - 标准版本，载客量约300人',
+                            'A330neo系列 - 新一代燃油效率更高的版本，采用遄达7000发动机',
+                            'A330 MRTT - 空中加油机版本'
+                        ]
+                    },
+                    {
+                        id: 'a340',
+                        name: '空客 A340',
+                        description: '空客A340是一种四引擎远程宽体客机，主要用于超长距离航线。1993年投入使用，是空客公司为与波音747竞争而开发的大型客机。A340采用了先进的机翼设计和四引擎布局，具有出色的可靠性和远程飞行能力。该机型配备了宽敞的客舱和先进的机载系统，为乘客提供舒适的长途飞行体验。尽管随着双引擎客机技术的进步，A340逐渐被更高效的A350所取代，但其在航空史上的地位仍然重要。',
+                        image: 'PICTURES/AirBus/A340.png',
+                        specs: {
+                            capacity: '239-380人',
+                            range: '12,400-16,670公里',
+                            cruiseSpeed: '875 km/h',
+                            wingspan: '60.3米',
+                            length: '63.69米',
+                            height: '16.79米'
+                        },
+                        variants: [
+                            'A340-200 - 短机身远程版本，载客量约239人',
+                            'A340-300 - 标准版本，载客量约295人',
+                            'A340-500 - 超远程版本，航程可达16,670公里',
+                            'A340-600 - 延长机身版本，载客量约380人'
+                        ]
+                    },
+                    {
+                        id: 'a350',
+                        name: '空客 A350',
+                        description: '空客A350是一种现代化的远程宽体客机，采用大量复合材料，与波音787和777竞争。2015年投入使用，是空客公司的旗舰机型之一。A350采用了先进的碳纤维复合材料结构，大幅减轻了飞机重量，提高了燃油效率。该机型配备了最先进的驾驶舱系统和客舱设施，包括更大的窗户、更好的空气流通系统和更安静的客舱环境。A350系列因其出色的燃油效率和环保性能，成为全球各大航空公司远程航线的首选机型。',
+                        image: 'PICTURES/AirBus/A350.jpg',
+                        specs: {
+                            capacity: '300-410人',
+                            range: '15,000-16,100公里',
+                            cruiseSpeed: '903 km/h',
+                            wingspan: '64.75米',
+                            length: '66.8米',
+                            height: '17.05米'
+                        },
+                        variants: [
+                            'A350-900 - 标准版本，载客量约300人',
+                            'A350-1000 - 延长机身版本，载客量约350人',
+                            'A350F - 货运版本，最大载重约109吨'
+                        ]
+                    },
+                    {
+                        id: 'a380',
+                        name: '空客 A380',
+                        description: '空客A380是世界上最大的客机，采用双层客舱设计，主要用于高密度远程航线。2007年投入使用，是空客公司的标志性机型。A380采用了先进的机翼设计、高效的发动机和大量复合材料，具有出色的燃油效率和运营经济性。该机型配备了宽敞的客舱和豪华的乘客设施，包括商务舱套房、头等舱淋浴间等高端配置。A380因其独特的双层设计和巨大的载客能力，成为全球各大航空公司的旗舰机型，尤其适合连接大型航空枢纽的繁忙航线。',
+                        image: 'PICTURES/AirBus/A380.jpeg',
+                        specs: {
+                            capacity: '525-853人',
+                            range: '14,800公里',
+                            cruiseSpeed: '900 km/h',
+                            wingspan: '80.8米',
+                            length: '72.72米',
+                            height: '24.09米'
+                        },
+                        variants: [
+                            'A380-800 - 标准版本，载客量约525人',
+                            'A380-800F - 货运版本，最大载重约150吨',
+                            'A380plus - 改进版本，燃油效率提高4%'
+                        ]
+                    }
+                ]
+            },
+            comac: {
+                name: '中国商飞 (COMAC)',
+                aircrafts: [
+                    {
+                        id: 'c919',
+                        name: 'C919',
+                        description: 'C919是中国商飞自主研发的窄体客机，主要用于中短途航线，与波音737和空客A320竞争。2017年首飞，2023年投入商业运营，是中国民航工业的重要成果。C919采用了先进的空气动力学设计和高效的LEAP-1C发动机，具有出色的燃油效率和运营经济性。该机型配备了现代化的驾驶舱和客舱设施，为乘客提供舒适的飞行体验。C919的成功研制标志着中国成为世界上少数几个能够自主研制大型客机的国家之一，对于提升中国航空工业的整体水平具有重要意义。',
+                        image: 'PICTURES/C919.png',
+                        specs: {
+                            capacity: '156-190人',
+                            range: '4,075-5,555公里',
+                            cruiseSpeed: '828 km/h',
+                            wingspan: '35.8米',
+                            length: '38.9米',
+                            height: '11.95米'
+                        },
+                        variants: [
+                            'C919 - 标准版本，载客量约156人',
+                            'C919ER - 增程版本，航程可达5,555公里'
+                        ]
+                    },
+                    {
+                        id: 'arj21',
+                        name: 'ARJ21',
+                        description: 'ARJ21是中国商飞研发的支线客机，主要用于短途航线。2008年首飞，2016年投入商业运营，是中国自主研发的第一种喷气式客机。ARJ21采用了先进的翼型设计和高效的CF34-10A发动机，具有出色的短跑道性能和高温高原适应能力。该机型配备了现代化的驾驶舱和客舱设施，为乘客提供舒适的飞行体验。ARJ21的成功运营为中国商飞积累了宝贵的客机研制和运营经验，为后续C919等大型客机的发展奠定了基础。',
+                        image: 'PICTURES/商飞/ARJ21.jpeg',
+                        specs: {
+                            capacity: '78-90人',
+                            range: '2,225-3,700公里',
+                            cruiseSpeed: '828 km/h',
+                            wingspan: '27.28米',
+                            length: '33.46米',
+                            height: '8.44米'
+                        },
+                        variants: [
+                            'ARJ21-700 - 标准版本，载客量约78人',
+                            'ARJ21-900 - 延长机身版本，载客量约90人',
+                            'ARJ21F - 货运版本，最大载重约10吨'
+                        ]
+                    }
+                ]
+            }
+        };
+        
+        // 当前选中的厂家和机型
+        let currentManufacturer = null;
+        let currentAircraft = null;
+        
+        // 对比列表
+        let compareList = [];
+        const MAX_COMPARE_ITEMS = 4;
+        
+        // 初始化页面
+        function initPage() {
+            console.log('初始化页面');
+            // 加载制造商列表
+            loadManufacturers();
+            
+            // 绑定事件
+            bindEvents();
+            
+            // 绑定搜索事件
+            bindSearchEvents();
+            
+            // 绑定对比相关事件
+            bindCompareEvents();
+            
+            // 初始化滚动效果
+            initScrollEffects();
+            
+            // 初始化菜单切换功能
+            initMenuToggle();
+        }
+        
+        // 初始化滚动效果
+        function initScrollEffects() {
+            console.log('初始化滚动效果');
+            
+            // 绑定滚动事件
+            window.addEventListener('scroll', function() {
+                updateScrollProgress();
+                checkScrollAnimation();
+            });
+            
+            // 初始检查
+            checkScrollAnimation();
+        }
+        
+        // 初始化菜单切换功能
+        function initMenuToggle() {
+            console.log('初始化菜单切换功能');
+            const menuToggle = document.getElementById('menu-toggle');
+            const navbarMenu = document.getElementById('navbar-menu');
+            
+            if (menuToggle && navbarMenu) {
+                menuToggle.addEventListener('click', function() {
+                    navbarMenu.classList.toggle('active');
+                });
+            }
+        }
+        
+        // 生成图片画廊
+        function generateImageGallery(aircraft) {
+            console.log('生成图片画廊:', aircraft.name);
+            
+            const mainImage = document.querySelector('.gallery-main-image');
+            const thumbnailsContainer = document.querySelector('.gallery-thumbnails');
+            const counter = document.querySelector('.gallery-counter');
+            const prevBtn = document.querySelector('.gallery-control.prev');
+            const nextBtn = document.querySelector('.gallery-control.next');
+            
+            if (!mainImage || !thumbnailsContainer || !counter || !prevBtn || !nextBtn) {
+                console.error('图片画廊元素不存在');
+                return;
+            }
+            
+            // 获取图片列表，默认为单张图片
+            const images = aircraft.images || [aircraft.image];
+            let currentIndex = 0;
+            
+            // 更新主图片
+            function updateMainImage(index) {
+                mainImage.src = `/${images[index]}`;
+                counter.textContent = `${index + 1}/${images.length}`;
+                
+                // 更新缩略图状态
+                document.querySelectorAll('.gallery-thumbnail').forEach((thumb, i) => {
+                    if (i === index) {
+                        thumb.classList.add('active');
+                    } else {
+                        thumb.classList.remove('active');
+                    }
+                });
+            }
+            
+            // 生成缩略图
+            thumbnailsContainer.innerHTML = '';
+            images.forEach((img, index) => {
+                const thumbnail = document.createElement('div');
+                thumbnail.className = `gallery-thumbnail ${index === 0 ? 'active' : ''}`;
+                thumbnail.innerHTML = `<img src="/${img}" alt="${aircraft.name} 图片 ${index + 1}">`;
+                
+                // 添加点击事件
+                thumbnail.addEventListener('click', function() {
+                    currentIndex = index;
+                    updateMainImage(currentIndex);
+                });
+                
+                thumbnailsContainer.appendChild(thumbnail);
+            });
+            
+            // 添加控制按钮事件
+            prevBtn.addEventListener('click', function() {
+                currentIndex = (currentIndex - 1 + images.length) % images.length;
+                updateMainImage(currentIndex);
+            });
+            
+            nextBtn.addEventListener('click', function() {
+                currentIndex = (currentIndex + 1) % images.length;
+                updateMainImage(currentIndex);
+            });
+            
+            // 初始化显示第一张图片
+            updateMainImage(0);
+        }
+        
+        // 生成技术规格图表
+        function generateSpecsChart(aircraft) {
+            console.log('生成技术规格图表:', aircraft.name);
+            
+            const ctx = document.getElementById('specs-chart');
+            if (!ctx) {
+                console.error('图表容器不存在');
+                return;
+            }
+            
+            // 销毁现有图表
+            if (window.specsChart) {
+                window.specsChart.destroy();
+            }
+            
+            // 处理技术规格数据
+            const specs = aircraft.specs;
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+            
+            // 颜色数组
+            const colors = [
+                'rgba(66, 153, 225, 0.7)',
+                'rgba(99, 179, 237, 0.7)',
+                'rgba(125, 211, 252, 0.7)',
+                'rgba(160, 222, 255, 0.7)',
+                'rgba(191, 234, 255, 0.7)'
+            ];
+            
+            // 提取关键技术参数
+            Object.entries(specs).forEach(([key, value], index) => {
+                let label = '';
+                let numericValue = 0;
+                
+                switch (key) {
+                    case 'capacity': 
+                        label = '载客量';
+                        numericValue = parseInt(value);
+                        break;
+                    case 'range': 
+                        label = '航程';
+                        // 提取数字部分，去掉单位
+                        numericValue = parseInt(value.replace(/[^\d]/g, ''));
+                        break;
+                    case 'cruiseSpeed': 
+                        label = '巡航速度';
+                        numericValue = parseInt(value.replace(/[^\d]/g, ''));
+                        break;
+                    case 'wingspan': 
+                        label = '翼展';
+                        numericValue = parseFloat(value.replace(/[^\d.]/g, ''));
+                        break;
+                    case 'length': 
+                        label = '长度';
+                        numericValue = parseFloat(value.replace(/[^\d.]/g, ''));
+                        break;
+                    case 'height': 
+                        label = '高度';
+                        numericValue = parseFloat(value.replace(/[^\d.]/g, ''));
+                        break;
+                    default: return;
+                }
+                
+                if (numericValue > 0) {
+                    labels.push(label);
+                    data.push(numericValue);
+                    backgroundColors.push(colors[index % colors.length]);
+                }
+            });
+            
+            // 创建图表
+            window.specsChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: aircraft.name,
+                        data: data,
+                        backgroundColor: backgroundColors[0],
+                        borderColor: 'rgba(66, 153, 225, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(66, 153, 225, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(66, 153, 225, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(66, 153, 225, 0.2)'
+                            },
+                            grid: {
+                                color: 'rgba(66, 153, 225, 0.1)'
+                            },
+                            pointLabels: {
+                                color: '#a0aec0',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                color: '#718096',
+                                backdropColor: 'transparent'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#a0aec0'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新滚动进度条
+        function updateScrollProgress() {
+            const scrollProgress = document.getElementById('scroll-progress');
+            if (!scrollProgress) return;
+            
+            const totalHeight = document.body.scrollHeight - window.innerHeight;
+            const progress = (window.scrollY / totalHeight) * 100;
+            scrollProgress.style.width = `${progress}%`;
+        }
+        
+        // 检查滚动动画
+        function checkScrollAnimation() {
+            const elements = document.querySelectorAll('.fade-in');
+            
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('visible');
+                }
+            });
+        }
+        
+        // 绑定对比相关事件
+        function bindCompareEvents() {
+            console.log('绑定对比相关事件');
+            
+            // 对比按钮点击事件
+            const compareBtn = document.getElementById('compare-btn');
+            if (compareBtn) {
+                compareBtn.addEventListener('click', function() {
+                    showComparePanel();
+                });
+            }
+            
+            // 关闭对比面板按钮点击事件
+            const closeCompareBtn = document.getElementById('close-compare-btn');
+            if (closeCompareBtn) {
+                closeCompareBtn.addEventListener('click', function() {
+                    hideComparePanel();
+                });
+            }
+            
+            // 对比背景遮罩点击事件
+            const compareOverlay = document.getElementById('compare-overlay');
+            if (compareOverlay) {
+                compareOverlay.addEventListener('click', function() {
+                    hideComparePanel();
+                });
+            }
+        }
+        
+        // 绑定对比复选框事件
+        function bindCompareCheckboxEvents() {
+            console.log('绑定对比复选框事件');
+            const checkboxes = document.querySelectorAll('.compare-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    
+                    const manufacturerKey = this.dataset.manufacturer;
+                    const aircraftId = this.dataset.aircraft;
+                    const manufacturer = aircraftData[manufacturerKey];
+                    const aircraft = manufacturer.aircrafts.find(a => a.id === aircraftId);
+                    
+                    if (!aircraft) return;
+                    
+                    // 检查是否已在对比列表中
+                    const existingIndex = compareList.findIndex(item => 
+                        item.manufacturer === manufacturerKey && item.aircraft.id === aircraftId
+                    );
+                    
+                    if (existingIndex > -1) {
+                        // 从对比列表中移除
+                        compareList.splice(existingIndex, 1);
+                        this.classList.remove('checked');
+                    } else {
+                        // 检查对比列表是否已满
+                        if (compareList.length >= MAX_COMPARE_ITEMS) {
+                            alert(`最多只能对比${MAX_COMPARE_ITEMS}个机型`);
+                            return;
+                        }
+                        
+                        // 添加到对比列表
+                        compareList.push({ manufacturer: manufacturerKey, aircraft });
+                        this.classList.add('checked');
+                    }
+                    
+                    // 更新对比按钮状态
+                    updateCompareButton();
+                });
+            });
+        }
+        
+        // 更新对比按钮状态
+        function updateCompareButton() {
+            const compareBtn = document.getElementById('compare-btn');
+            if (compareBtn) {
+                if (compareList.length >= 2) {
+                    compareBtn.disabled = false;
+                    compareBtn.textContent = `🔄 对比 (${compareList.length}/${MAX_COMPARE_ITEMS})`;
+                } else {
+                    compareBtn.disabled = true;
+                    compareBtn.textContent = `🔄 对比 (${compareList.length}/${MAX_COMPARE_ITEMS})`;
+                }
+            }
+        }
+        
+        // 显示对比面板
+        function showComparePanel() {
+            console.log('显示对比面板');
+            
+            if (compareList.length < 2) {
+                alert('请至少选择2个机型进行对比');
+                return;
+            }
+            
+            const comparePanel = document.getElementById('compare-panel');
+            const compareOverlay = document.getElementById('compare-overlay');
+            const compareContent = document.getElementById('compare-content');
+            
+            if (!comparePanel || !compareOverlay || !compareContent) {
+                console.error('对比面板元素不存在');
+                return;
+            }
+            
+            // 生成对比表格
+            compareContent.innerHTML = generateCompareTable();
+            
+            // 显示对比面板和遮罩
+            comparePanel.classList.add('active');
+            compareOverlay.classList.add('active');
+        }
+        
+        // 隐藏对比面板
+        function hideComparePanel() {
+            console.log('隐藏对比面板');
+            
+            const comparePanel = document.getElementById('compare-panel');
+            const compareOverlay = document.getElementById('compare-overlay');
+            
+            if (comparePanel) {
+                comparePanel.classList.remove('active');
+            }
+            
+            if (compareOverlay) {
+                compareOverlay.classList.remove('active');
+            }
+        }
+        
+        // 生成对比表格
+        function generateCompareTable() {
+            console.log('生成对比表格');
+            
+            // 对比的参数
+            const specs = [
+                { key: 'capacity', name: '载客量' },
+                { key: 'range', name: '航程' },
+                { key: 'cruiseSpeed', name: '巡航速度' },
+                { key: 'wingspan', name: '翼展' },
+                { key: 'length', name: '长度' },
+                { key: 'height', name: '高度' }
+            ];
+            
+            // 生成表格HTML
+            let html = `
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th>参数</th>
+            `;
+            
+            // 添加机型列
+            compareList.forEach(item => {
+                html += `<th>${item.aircraft.name}</th>`;
+            });
+            
+            html += `
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // 添加参数行
+            specs.forEach(spec => {
+                html += `<tr>
+                    <td class="compare-spec-name">${spec.name}</td>
+                `;
+                
+                compareList.forEach(item => {
+                    const value = item.aircraft.specs[spec.key] || '-';
+                    html += `<td>${value}</td>`;
+                });
+                
+                html += `</tr>`;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            return html;
+        }
+        
+        // 绑定搜索事件
+        function bindSearchEvents() {
+            console.log('绑定搜索事件');
+            const searchInput = document.getElementById('aircraft-search');
+            const searchBtn = document.getElementById('search-btn');
+            const searchResults = document.getElementById('search-results');
+            const searchResultsList = document.getElementById('search-results-list');
+            
+            if (searchInput && searchBtn) {
+                // 搜索按钮点击事件
+                searchBtn.addEventListener('click', function() {
+                    const searchTerm = searchInput.value.trim().toLowerCase();
+                    if (searchTerm) {
+                        performSearch(searchTerm);
+                    }
+                });
+                
+                // 输入框回车事件
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const searchTerm = searchInput.value.trim().toLowerCase();
+                        if (searchTerm) {
+                            performSearch(searchTerm);
+                        }
+                    }
+                });
+                
+                // 输入框输入事件（实时搜索）
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = searchInput.value.trim().toLowerCase();
+                    if (searchTerm.length >= 2) {
+                        performSearch(searchTerm);
+                    } else if (searchTerm.length === 0) {
+                        // 清空搜索结果
+                        searchResults.classList.remove('visible');
+                        searchResultsList.innerHTML = '';
+                    }
+                });
+            }
+        }
+        
+        // 执行搜索
+        function performSearch(searchTerm) {
+            console.log('执行搜索:', searchTerm);
+            const searchResults = document.getElementById('search-results');
+            const searchResultsList = document.getElementById('search-results-list');
+            
+            // 清空之前的搜索结果
+            searchResultsList.innerHTML = '';
+            
+            // 搜索匹配的机型
+            const results = [];
+            
+            Object.keys(aircraftData).forEach(manufacturerKey => {
+                const manufacturer = aircraftData[manufacturerKey];
+                manufacturer.aircrafts.forEach(aircraft => {
+                    // 检查机型名称、描述是否包含搜索词
+                    if (
+                        aircraft.name.toLowerCase().includes(searchTerm) ||
+                        aircraft.description.toLowerCase().includes(searchTerm)
+                    ) {
+                        results.push({
+                            manufacturer: manufacturerKey,
+                            manufacturerName: manufacturer.name,
+                            aircraft: aircraft
+                        });
+                    }
+                });
+            });
+            
+            // 显示搜索结果
+            if (results.length > 0) {
+                results.forEach(result => {
+                    const li = document.createElement('li');
+                    li.className = 'search-result-item';
+                    li.dataset.manufacturer = result.manufacturer;
+                    li.dataset.aircraft = result.aircraft.id;
+                    li.innerHTML = `
+                        <h4>${result.aircraft.name}</h4>
+                        <p>${result.manufacturerName}</p>
+                    `;
+                    
+                    // 添加点击事件
+                    li.addEventListener('click', function() {
+                        const manufacturerKey = this.dataset.manufacturer;
+                        const aircraftId = this.dataset.aircraft;
+                        
+                        // 选择制造商
+                        document.querySelectorAll('.manufacturer-link').forEach(link => {
+                            link.classList.remove('active');
+                            if (link.dataset.manufacturer === manufacturerKey) {
+                                link.classList.add('active');
+                            }
+                        });
+                        
+                        // 加载机型列表并显示详情
+                        loadAircrafts(manufacturerKey);
+                        setTimeout(() => {
+                            showAircraftDetails(manufacturerKey, aircraftId);
+                        }, 100);
+                        
+                        // 隐藏搜索结果
+                        searchResults.classList.remove('visible');
+                    });
+                    
+                    searchResultsList.appendChild(li);
+                });
+                
+                searchResults.classList.add('visible');
+            } else {
+                // 没有找到结果
+                const li = document.createElement('li');
+                li.className = 'search-result-item';
+                li.style.textAlign = 'center';
+                li.style.cursor = 'default';
+                li.innerHTML = '<p>未找到匹配的机型</p>';
+                searchResultsList.appendChild(li);
+                searchResults.classList.add('visible');
+            }
+        }
+        
+        // 加载制造商列表
+        function loadManufacturers() {
+            console.log('加载制造商列表');
+            const sidebar = document.querySelector('.sidebar .manufacturer-list');
+            if (!sidebar) {
+                console.error('未找到sidebar .manufacturer-list');
+                return;
+            }
+            sidebar.innerHTML = '';
+            
+            console.log('aircraftData:', aircraftData);
+            console.log('Object.keys(aircraftData):', Object.keys(aircraftData));
+            
+            // 添加制造商链接
+            Object.keys(aircraftData).forEach(key => {
+                console.log('添加制造商:', key);
+                const manufacturer = aircraftData[key];
+                const li = document.createElement('li');
+                li.className = 'manufacturer-item';
+                li.innerHTML = `<a href="#" class="manufacturer-link" data-manufacturer="${key}">${manufacturer.name}</a>`;
+                sidebar.appendChild(li);
+            });
+        }
+        
+        // 加载机型列表
+        function loadAircrafts(manufacturerKey) {
+            console.log('加载机型列表:', manufacturerKey);
+            const manufacturer = aircraftData[manufacturerKey];
+            if (!manufacturer) {
+                console.error('未找到制造商:', manufacturerKey);
+                return;
+            }
+            
+            currentManufacturer = manufacturerKey;
+            currentAircraft = null;
+            
+            // 更新厂家标题
+            const header = document.querySelector('.manufacturer-header h2');
+            if (header) {
+                header.textContent = manufacturer.name;
+            }
+            
+            // 显示机型列表
+            const aircraftList = document.querySelector('.aircraft-list');
+            if (!aircraftList) {
+                console.error('未找到aircraft-list');
+                return;
+            }
+            aircraftList.innerHTML = '';
+            
+            manufacturer.aircrafts.forEach((aircraft, index) => {
+                // 检查是否已在对比列表中
+                const isChecked = compareList.some(item => 
+                    item.manufacturer === manufacturerKey && item.aircraft.id === aircraft.id
+                );
+                
+                const card = document.createElement('div');
+                card.className = 'aircraft-card fade-in';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.dataset.manufacturer = manufacturerKey;
+                card.dataset.aircraft = aircraft.id;
+                card.innerHTML = `
+                    <div class="compare-checkbox ${isChecked ? 'checked' : ''}" data-manufacturer="${manufacturerKey}" data-aircraft="${aircraft.id}"></div>
+                    <h3>${aircraft.name}</h3>
+                    <div class="aircraft-description">
+                        ${aircraft.description}
+                    </div>
+                `;
+                aircraftList.appendChild(card);
+            });
+            
+            // 添加机型列表的淡入动画
+            aircraftList.classList.add('fade-in');
+            setTimeout(() => {
+                aircraftList.classList.add('visible');
+            }, 100);
+            
+            // 隐藏机型详情
+            const details = document.querySelector('.aircraft-details');
+            if (details) {
+                details.classList.remove('active');
+            }
+            aircraftList.style.display = 'grid';
+            
+            // 绑定对比复选框事件
+            bindCompareCheckboxEvents();
+        }
+        
+        // 显示机型详情
+        function showAircraftDetails(manufacturerKey, aircraftId) {
+            console.log('显示机型详情:', manufacturerKey, aircraftId);
+            const manufacturer = aircraftData[manufacturerKey];
+            if (!manufacturer) {
+                console.error('未找到制造商:', manufacturerKey);
+                return;
+            }
+            
+            const aircraft = manufacturer.aircrafts.find(a => a.id === aircraftId);
+            if (!aircraft) {
+                console.error('未找到机型:', aircraftId);
+                return;
+            }
+            
+            currentAircraft = aircraftId;
+            
+            // 填充详情内容
+            const title = document.querySelector('.details-title h2');
+            const desc = document.querySelector('.details-title p');
+            const image = document.querySelector('.aircraft-image');
+            
+            if (title) title.textContent = aircraft.name;
+            if (desc) desc.textContent = aircraft.description;
+            if (image) image.src = `/${aircraft.image}`;
+            
+            // 填充技术规格
+            const specsList = document.querySelector('.specs-list');
+            if (specsList) {
+                specsList.innerHTML = '';
+                Object.entries(aircraft.specs).forEach(([key, value]) => {
+                    let label = '';
+                    switch (key) {
+                        case 'capacity': label = '载客量'; break;
+                        case 'range': label = '航程'; break;
+                        case 'cruiseSpeed': label = '巡航速度'; break;
+                        case 'wingspan': label = '翼展'; break;
+                        case 'length': label = '长度'; break;
+                        case 'height': label = '高度'; break;
+                        default: label = key;
+                    }
+                    
+                    const specItem = document.createElement('div');
+                    specItem.className = 'spec-item fade-in';
+                    specItem.innerHTML = `
+                        <span class="spec-label">${label}</span>
+                        <span class="spec-value">${value}</span>
+                    `;
+                    specsList.appendChild(specItem);
+                });
+            }
+            
+            // 填充型号列表
+            const variantsList = document.querySelector('.variant-list');
+            if (variantsList) {
+                variantsList.innerHTML = '';
+                aircraft.variants.forEach((variant, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = variant;
+                    li.className = 'fade-in';
+                    li.style.animationDelay = `${index * 0.1}s`;
+                    variantsList.appendChild(li);
+                });
+            }
+            
+            // 显示详情，隐藏列表
+            const details = document.querySelector('.aircraft-details');
+            const aircraftList = document.querySelector('.aircraft-list');
+            if (details) details.classList.add('active');
+            if (aircraftList) aircraftList.style.display = 'none';
+            
+            // 生成技术规格图表
+            generateSpecsChart(aircraft);
+            
+            // 触发动画效果
+            setTimeout(() => {
+                const fadeElements = document.querySelectorAll('.aircraft-details .fade-in');
+                fadeElements.forEach((element, index) => {
+                    setTimeout(() => {
+                        element.classList.add('visible');
+                    }, index * 100);
+                });
+            }, 100);
+        }
+        
+        // 绑定事件
+        function bindEvents() {
+            console.log('绑定事件');
+            // 制造商链接点击事件
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('manufacturer-link')) {
+                    e.preventDefault();
+                    const manufacturerKey = e.target.dataset.manufacturer;
+                    console.log('点击制造商:', manufacturerKey);
+                    
+                    // 更新活动状态
+                    document.querySelectorAll('.manufacturer-link').forEach(link => {
+                        link.classList.remove('active');
+                    });
+                    e.target.classList.add('active');
+                    
+                    // 加载机型列表
+                    loadAircrafts(manufacturerKey);
+                }
+            });
+            
+            // 机型卡片点击事件
+            document.addEventListener('click', function(e) {
+                const card = e.target.closest('.aircraft-card');
+                if (card) {
+                    const manufacturerKey = card.dataset.manufacturer;
+                    const aircraftId = card.dataset.aircraft;
+                    console.log('点击机型:', manufacturerKey, aircraftId);
+                    showAircraftDetails(manufacturerKey, aircraftId);
+                }
+            });
+            
+            // 返回按钮点击事件
+            const backBtn = document.querySelector('.back-btn');
+            if (backBtn) {
+                backBtn.addEventListener('click', function() {
+                    console.log('点击返回按钮');
+                    const details = document.querySelector('.aircraft-details');
+                    const aircraftList = document.querySelector('.aircraft-list');
+                    if (details) details.classList.remove('active');
+                    if (aircraftList) aircraftList.style.display = 'grid';
+                    currentAircraft = null;
+                });
+            }
+        }
+        
+        // 页面加载时初始化
+        console.log('添加DOMContentLoaded事件监听器');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded事件触发');
+            // 延迟一点执行，确保所有元素都已加载
+            setTimeout(function() {
+                console.log('延迟执行初始化');
+                checkLogin();
+                initPage();
+            }, 100);
+        });
+        
+        // 同时添加window.load事件监听器作为备份
+        console.log('添加window.load事件监听器');
+        window.addEventListener('load', function() {
+            console.log('window.load事件触发');
+            // 检查是否已经初始化
+            const manufacturerList = document.querySelector('.sidebar .manufacturer-list');
+            if (manufacturerList && manufacturerList.children.length === 0) {
+                console.log('制造商列表为空，重新初始化');
+                checkLogin();
+                initPage();
+            }
+        });
+        
+        // 查看维修记录
+        async function viewMaintenanceRecords() {
+            try {
+                // 显示加载状态
+                const recordsList = document.getElementById('maintenance-records-list');
+                if (recordsList) {
+                    recordsList.innerHTML = '<div class="maintenance-loading"><div class="loading"></div><p style="margin-top: 15px;">加载维修记录中...</p></div>';
+                }
+                
+                // 打开模态框
+                const modal = document.getElementById('maintenance-modal');
+                if (modal) {
+                    modal.classList.add('active');
+                }
+                
+                // 发送请求到后端API获取维修记录
+                // 注意：这里我们使用机型ID作为查询参数，实际应用中可能需要根据具体情况调整
+                const response = await fetch(`/api/maintenance/records?aircraft_type=${currentAircraft}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayMaintenanceRecords(data.records);
+                } else {
+                    displayNoMaintenanceRecords();
+                }
+            } catch (error) {
+                console.error('获取维修记录失败:', error);
+                displayNoMaintenanceRecords();
+            }
+        }
+        
+        // 显示维修记录
+        function displayMaintenanceRecords(records) {
+            const recordsList = document.getElementById('maintenance-records-list');
+            if (!recordsList) return;
+            
+            if (!records || records.length === 0) {
+                displayNoMaintenanceRecords();
+                return;
+            }
+            
+            let html = '';
+            records.forEach(record => {
+                const statusClass = record.status === 'released' ? 'completed' : 'in-progress';
+                const statusText = record.status === 'released' ? '已完成' : '进行中';
+                
+                html += `
+                    <div class="maintenance-record-item">
+                        <div class="maintenance-record-header">
+                            <h4 class="maintenance-record-title">${record.maintenance_type}</h4>
+                            <span class="maintenance-record-date">${record.maintenance_date}</span>
+                        </div>
+                        <div class="maintenance-record-description">
+                            ${record.maintenance_description}
+                        </div>
+                        <div class="maintenance-record-footer">
+                            <span class="maintenance-record-status ${statusClass}">${statusText}</span>
+                            <span class="maintenance-record-technician">技术人员: ${record.technician_name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            recordsList.innerHTML = html;
+        }
+        
+        // 显示无维修记录
+        function displayNoMaintenanceRecords() {
+            const recordsList = document.getElementById('maintenance-records-list');
+            if (!recordsList) return;
+            
+            recordsList.innerHTML = `
+                <div class="no-maintenance-records">
+                    <p>暂无维修记录</p>
+                    <p style="font-size: 14px; margin-top: 10px;">该机型尚未有维修记录或维修记录不可用。</p>
+                </div>
+            `;
+        }
+        
+        // 关闭维修记录模态框
+        function closeMaintenanceModal() {
+            const modal = document.getElementById('maintenance-modal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- 滚动进度条 -->
+    <div class="scroll-progress" id="scroll-progress"></div>
+    
+    <!-- 科技感背景 -->
+    <div class="tech-bg"></div>
+    
+    <div class="container">
+        <!-- 导航栏 -->
+                        <nav class="unified-navbar">
+            <div class="unified-navbar-left">
+                <a href="/" class="unified-home-btn">返回主页</a>
+                <div class="unified-navbar-menu">
+                    <a href="/video-system" class="unified-navbar-menu">远程视频</a>
+                    <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+                    <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+                    <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+                    <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a></div>
+            </div>
+            
+            <div class="unified-navbar-right">
+                <div class="unified-user-info" id="userInfo">
+                    <div class="unified-user-avatar" id="user-avatar">U</div>
+                    <div class="unified-user-details">
+                        <div class="unified-user-name" id="user-name">未登录</div>
+                        <div class="unified-user-role" id="user-role">访客</div>
+                    </div>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/profile">查看个人信息</a>
+                    <a href="/system-settings">系统设置</a>
+                    <a href="/system-monitor">系统监控</a>
+                    <a href="/report-generation">报表生成</a>
+                    <a href="/permission-management">权限管理</a>
+            <a href="/login" class="logout">退出登录</a>
+                </div>
+            </div>
+        </nav>
+        <script src="/static/unified-header.js"></script>
+
+        
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>航空器信息</h1>
+            <p>了解不同厂家的航空器型号和规格，为检修工作提供参考</p>
+        </div>
+        
+        <!-- 搜索栏 -->
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" class="search-input" id="aircraft-search" placeholder="搜索飞机型号...">
+                <button class="search-btn" id="search-btn">🔍</button>
+            </div>
+            <div class="search-results" id="search-results">
+                <h3>搜索结果</h3>
+                <ul class="search-results-list" id="search-results-list">
+                    <!-- 搜索结果将通过JavaScript动态添加 -->
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 对比控制区域 -->
+        <div class="compare-controls">
+            <button class="compare-btn" id="compare-btn" disabled>🔄 对比 (0/4)</button>
+        </div>
+        
+        <!-- 对比背景遮罩 -->
+        <div class="compare-overlay" id="compare-overlay"></div>
+        
+        <!-- 对比面板 -->
+        <div class="compare-panel" id="compare-panel">
+            <div class="compare-panel-header">
+                <h3>机型对比</h3>
+                <button class="close-compare-btn" id="close-compare-btn">×</button>
+            </div>
+            <div class="compare-content" id="compare-content">
+                <!-- 对比表格将通过JavaScript动态添加 -->
+            </div>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <h2>制造厂商</h2>
+                <ul class="manufacturer-list">
+                    <!-- 制造商列表将通过JavaScript动态添加 -->
+                </ul>
+            </div>
+            
+            <!-- 内容区域 -->
+            <div class="content-area">
+                <!-- 厂家标题 -->
+                <div class="manufacturer-header">
+                    <h2>请选择制造厂商</h2>
+                </div>
+                
+                <!-- 机型列表 -->
+                <div class="aircraft-list">
+                    <!-- 机型卡片将通过JavaScript动态添加 -->
+                </div>
+                
+                <!-- 机型详情 -->
+                <div class="aircraft-details">
+                    <div class="details-header">
+                        <button class="back-btn">← 返回机型列表</button>
+                        <div class="details-title">
+                            <h2>机型详情</h2>
+                            <p>技术规格和特点</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 飞机图片 -->
+                    <img src="" alt="飞机图片" class="aircraft-image">
+                    
+                    <!-- 详细信息 -->
+                    <div class="details-content">
+                        <!-- 技术规格 -->
+                        <div class="specs-section">
+                            <h3>技术规格</h3>
+                            <div class="specs-content">
+                                <div class="specs-list">
+                                    <!-- 技术规格将通过JavaScript动态添加 -->
+                                </div>
+                                <div class="specs-chart">
+                                    <canvas id="specs-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 型号列表 -->
+                        <div class="variants-section">
+                            <h3>主要型号</h3>
+                            <ul class="variant-list">
+                                <!-- 型号列表将通过JavaScript动态添加 -->
+                            </ul>
+                        </div>
+                        
+                        <!-- 维修信息 -->
+                        <div class="maintenance-section">
+                            <h3>维修信息</h3>
+                            <p>查看本机型相关的维修记录，了解飞机的维护历史和状态。</p>
+                            <button class="maintenance-btn" onclick="viewMaintenanceRecords()">查看维修记录</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 维修记录模态框 -->
+        <div id="maintenance-modal" class="maintenance-modal">
+            <div class="maintenance-modal-content">
+                <div class="maintenance-modal-header">
+                    <h2>飞机维修记录</h2>
+                    <button class="maintenance-modal-close" onclick="closeMaintenanceModal()">&times;</button>
+                </div>
+                <div class="maintenance-records-list" id="maintenance-records-list">
+                    <!-- 维修记录将在此动态添加 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

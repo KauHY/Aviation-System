@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色信息测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .info-box {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>角色信息测试</h1>
+    
+    <div class="info-box">
+        <h2>当前登录用户信息</h2>
+        <p><strong>用户名:</strong> <span id="currentUser">-</span></p>
+        <p><strong>角色:</strong> <span id="currentUserRole">-</span></p>
+        <p><strong>地址:</strong> <span id="currentUserAddress">-</span></p>
+        <p><strong>员工ID:</strong> <span id="currentUserEmployeeId">-</span></p>
+    </div>
+    
+    <div class="info-box">
+        <h2>localStorage 内容</h2>
+        <pre id="localStorageContent">-</pre>
+    </div>
+    
+    <div class="info-box">
+        <h2>操作</h2>
+        <button onclick="clearLocalStorage()">清除 localStorage</button>
+        <button onclick="testAdminRole()">测试设置为 admin</button>
+        <button onclick="testManagerRole()">测试设置为 manager</button>
+        <button onclick="refresh()">刷新页面</button>
+    </div>
+    
+    <div id="message"></div>
+    
+    <script>
+        function displayUserInfo() {
+            const currentUser = localStorage.getItem('currentUser');
+            const currentUserRole = localStorage.getItem('currentUserRole');
+            const currentUserAddress = localStorage.getItem('currentUserAddress');
+            const currentUserEmployeeId = localStorage.getItem('currentUserEmployeeId');
+            
+            document.getElementById('currentUser').textContent = currentUser || '未设置';
+            document.getElementById('currentUserRole').textContent = currentUserRole || '未设置';
+            document.getElementById('currentUserAddress').textContent = currentUserAddress || '未设置';
+            document.getElementById('currentUserEmployeeId').textContent = currentUserEmployeeId || '未设置';
+            
+            // 显示所有 localStorage 内容
+            const localStorageContent = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('user') || key.includes('User') || key.includes('token') || key.includes('Token')) {
+                    localStorageContent[key] = localStorage.getItem(key);
+                }
+            }
+            document.getElementById('localStorageContent').textContent = JSON.stringify(localStorageContent, null, 2);
+            
+            // 显示提示信息
+            const messageDiv = document.getElementById('message');
+            if (currentUserRole === 'admin') {
+                messageDiv.innerHTML = '<div class="info-box success">✅ 角色正确：总负责人（admin）</div>';
+            } else if (currentUserRole === 'manager') {
+                messageDiv.innerHTML = '<div class="info-box">ℹ️ 角色：管理人员（manager）</div>';
+            } else if (currentUserRole === 'technician') {
+                messageDiv.innerHTML = '<div class="info-box">ℹ️ 角色：技术人员（technician）</div>';
+            } else {
+                messageDiv.innerHTML = '<div class="info-box error">❌ 角色未设置或不正确：' + (currentUserRole || 'null') + '</div>';
+            }
+        }
+        
+        function clearLocalStorage() {
+            if (confirm('确定要清除所有 localStorage 吗？')) {
+                localStorage.clear();
+                displayUserInfo();
+                showMessage('localStorage 已清除', 'success');
+            }
+        }
+        
+        function testAdminRole() {
+            localStorage.setItem('currentUserRole', 'admin');
+            localStorage.setItem('currentUser', 'test_admin');
+            displayUserInfo();
+            showMessage('已设置为 admin 角色', 'success');
+        }
+        
+        function testManagerRole() {
+            localStorage.setItem('currentUserRole', 'manager');
+            localStorage.setItem('currentUser', 'test_manager');
+            displayUserInfo();
+            showMessage('已设置为 manager 角色', 'success');
+        }
+        
+        function refresh() {
+            location.reload();
+        }
+        
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="info-box ${type}">${message}</div>`;
+        }
+        
+        // 页面加载时显示用户信息
+        displayUserInfo();
+    </script>
+</body>
+</html>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限管理 - 飞机检修远程操作系统</title>
+    <link rel="stylesheet" href="/static/unified-header.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .permission-container {
+            max-width: 1400px;
+            margin: 80px auto 40px;
+            padding: 20px;
+        }
+        
+        .permission-header {
+            margin-bottom: 30px;
+        }
+        
+        .permission-header h1 {
+            margin: 0 0 10px 0;
+            color: #2d3748;
+        }
+        
+        .permission-header p {
+            margin: 0;
+            color: #718096;
+        }
+        
+        .role-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        .role-tab {
+            padding: 10px 20px;
+            background: #f7fafc;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #4a5568;
+            transition: all 0.3s;
+        }
+        
+        .role-tab:hover {
+            background: #edf2f7;
+        }
+        
+        .role-tab.active {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .permission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .permission-category {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .permission-category h3 {
+            margin: 0 0 15px 0;
+            color: #2d3748;
+            font-size: 16px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        .permission-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .permission-item input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .permission-item label {
+            cursor: pointer;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        
+        .permission-item input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .audit-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .audit-section h2 {
+            margin: 0 0 20px 0;
+            color: #2d3748;
+        }
+        
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .audit-table th,
+        .audit-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .audit-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .audit-table tr:hover {
+            background: #f7fafc;
+        }
+        
+        .audit-allowed {
+            color: #48bb78;
+            font-weight: 600;
+        }
+        
+        .audit-denied {
+            color: #f56565;
+            font-weight: 600;
+        }
+        
+        .refresh-btn {
+            padding: 8px 16px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        .refresh-btn:hover {
+            background: #3182ce;
+        }
+        
+        .no-permission {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .no-permission-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <script src="/static/unified-header.js"></script>
+    </nav>
+    
+    <div class="permission-container">
+        <div class="permission-header">
+            <h1>权限管理</h1>
+            <p>查看和管理系统权限配置</p>
+        </div>
+        
+        <div id="permission-content">
+            <div class="role-tabs">
+                <button class="role-tab active" data-role="technician">技术人员</button>
+                <button class="role-tab" data-role="manager">管理人员</button>
+                <button class="role-tab" data-role="admin">总负责人</button>
+                <button class="role-tab" data-role="user">用户</button>
+            </div>
+            
+            <div id="permission-matrix"></div>
+        </div>
+        
+        <div class="audit-section">
+            <h2>权限审计日志</h2>
+            <button class="refresh-btn" onclick="loadAuditLog()">刷新日志</button>
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>用户</th>
+                        <th>角色</th>
+                        <th>资源</th>
+                        <th>操作</th>
+                        <th>结果</th>
+                        <th>原因</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #718096;">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        const Permission = {
+            MAINTENANCE_VIEW: 'maintenance:view',
+            MAINTENANCE_CREATE: 'maintenance:create',
+            MAINTENANCE_EDIT: 'maintenance:edit',
+            MAINTENANCE_DELETE: 'maintenance:delete',
+            MAINTENANCE_APPROVE: 'maintenance:approve',
+            MAINTENANCE_UPLOAD: 'maintenance:upload',
+            TASK_VIEW: 'task:view',
+            TASK_CREATE: 'task:create',
+            TASK_EDIT: 'task:edit',
+            TASK_DELETE: 'task:delete',
+            TASK_ASSIGN: 'task:assign',
+            FLIGHT_VIEW: 'flight:view',
+            AIRCRAFT_VIEW: 'aircraft:view',
+            USER_VIEW: 'user:view',
+            USER_CREATE: 'user:create',
+            USER_EDIT: 'user:edit',
+            USER_DELETE: 'user:delete',
+            ROLE_VIEW: 'role:view',
+            ROLE_CREATE: 'role:create',
+            ROLE_EDIT: 'role:edit',
+            ROLE_DELETE: 'role:delete',
+            PERMISSION_ASSIGN: 'permission:assign',
+            SYSTEM_SETTINGS: 'system:settings',
+            SYSTEM_MONITOR: 'system:monitor',
+            DATA_BACKUP: 'data:backup',
+            DATA_RESTORE: 'data:restore',
+            LOG_VIEW: 'log:view',
+            BLOCKCHAIN_VIEW: 'blockchain:view',
+            BLOCKCHAIN_MANAGE: 'blockchain:manage',
+            REPORT_GENERATE: 'report:generate',
+            REPORT_EXPORT: 'report:export'
+        };
+        
+        const permissionCategories = {
+            '维修记录': [
+                { id: Permission.MAINTENANCE_VIEW, name: '查看记录' },
+                { id: Permission.MAINTENANCE_CREATE, name: '创建记录' },
+                { id: Permission.MAINTENANCE_EDIT, name: '编辑记录' },
+                { id: Permission.MAINTENANCE_DELETE, name: '删除记录' },
+                { id: Permission.MAINTENANCE_APPROVE, name: '审批记录' },
+                { id: Permission.MAINTENANCE_UPLOAD, name: '上传附件' }
+            ],
+            '任务管理': [
+                { id: Permission.TASK_VIEW, name: '查看任务' },
+                { id: Permission.TASK_CREATE, name: '创建任务' },
+                { id: Permission.TASK_EDIT, name: '编辑任务' },
+                { id: Permission.TASK_DELETE, name: '删除任务' },
+                { id: Permission.TASK_ASSIGN, name: '分配任务' }
+            ],
+            '基础信息': [
+                { id: Permission.FLIGHT_VIEW, name: '查看航班' },
+                { id: Permission.AIRCRAFT_VIEW, name: '查看航空器' }
+            ],
+            '用户管理': [
+                { id: Permission.USER_VIEW, name: '查看用户' },
+                { id: Permission.USER_CREATE, name: '创建用户' },
+                { id: Permission.USER_EDIT, name: '编辑用户' },
+                { id: Permission.USER_DELETE, name: '删除用户' }
+            ],
+            '角色管理': [
+                { id: Permission.ROLE_VIEW, name: '查看角色' },
+                { id: Permission.ROLE_CREATE, name: '创建角色' },
+                { id: Permission.ROLE_EDIT, name: '编辑角色' },
+                { id: Permission.ROLE_DELETE, name: '删除角色' }
+            ],
+            '系统管理': [
+                { id: Permission.PERMISSION_ASSIGN, name: '权限分配' },
+                { id: Permission.SYSTEM_SETTINGS, name: '系统设置' },
+                { id: Permission.SYSTEM_MONITOR, name: '系统监控' },
+                { id: Permission.DATA_BACKUP, name: '数据备份' },
+                { id: Permission.DATA_RESTORE, name: '数据恢复' },
+                { id: Permission.LOG_VIEW, name: '查看日志' }
+            ],
+            '区块链管理': [
+                { id: Permission.BLOCKCHAIN_VIEW, name: '查看区块链' },
+                { id: Permission.BLOCKCHAIN_MANAGE, name: '管理区块链' }
+            ],
+            '报表管理': [
+                { id: Permission.REPORT_GENERATE, name: '生成报表' },
+                { id: Permission.REPORT_EXPORT, name: '导出报表' }
+            ]
+        };
+        
+        let currentRole = 'technician';
+        
+        function loadRolePermissions(role) {
+            fetch(`/api/permissions/role?role=${role}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayPermissionMatrix(role, data.permissions);
+                })
+                .catch(error => {
+                    console.error('加载权限失败:', error);
+                    alert('加载权限失败');
+                });
+        }
+        
+        function displayPermissionMatrix(role, permissions) {
+            const container = document.getElementById('permission-matrix');
+            let html = '';
+            
+            for (const [category, items] of Object.entries(permissionCategories)) {
+                html += `
+                    <div class="permission-category">
+                        <h3>${category}</h3>
+                `;
+                
+                for (const item of items) {
+                    const hasPermission = permissions.includes(item.id);
+                    html += `
+                        <div class="permission-item">
+                            <input type="checkbox" 
+                                   id="perm-${item.id.replace(':', '-')}" 
+                                   ${hasPermission ? 'checked' : ''} 
+                                   disabled>
+                            <label for="perm-${item.id.replace(':', '-')}">${item.name}</label>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function loadAuditLog() {
+            fetch('/api/permissions/audit')
+                .then(response => response.json())
+                .then(data => {
+                    displayAuditLog(data.logs);
+                })
+                .catch(error => {
+                    console.error('加载审计日志失败:', error);
+                    document.getElementById('audit-table-body').innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #f56565;">
+                                加载失败: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+        
+        function displayAuditLog(logs) {
+            const tbody = document.getElementById('audit-table-body');
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #718096;">
+                            暂无审计日志
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            for (const log of logs) {
+                const resultClass = log.allowed ? 'audit-allowed' : 'audit-denied';
+                const resultText = log.allowed ? '允许' : '拒绝';
+                
+                html += `
+                    <tr>
+                        <td>${log.datetime}</td>
+                        <td>${log.user_id}</td>
+                        <td>${log.user_role}</td>
+                        <td>${log.resource}</td>
+                        <td>${log.action}</td>
+                        <td class="${resultClass}">${resultText}</td>
+                        <td>${log.reason || '-'}</td>
+                    </tr>
+                `;
+            }
+            
+            tbody.innerHTML = html;
+        }
+        
+        function init() {
+            const userRole = localStorage.getItem('currentUserRole');
+            
+            if (userRole !== 'admin') {
+                document.getElementById('permission-content').innerHTML = `
+                    <div class="no-permission">
+                        <div class="no-permission-icon">🔒</div>
+                        <h2>权限不足</h2>
+                        <p>只有总负责人可以访问权限管理页面</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            loadRolePermissions(currentRole);
+            loadAuditLog();
+            
+            const tabs = document.querySelectorAll('.role-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentRole = tab.dataset.role;
+                    loadRolePermissions(currentRole);
+                });
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

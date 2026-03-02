@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备测试 - 飞机检修远程操作系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-top: 4px solid #2b6cb0;
+        }
+        
+        h1 {
+            color: #2b6cb0;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 28px;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background-color: #f8fafc;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .test-controls {
+            margin-bottom: 25px;
+        }
+        
+        button {
+            background-color: #2b6cb0;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin-right: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .test-result {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 8px;
+            background-color: #f1f5f9;
+        }
+        
+        .success {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .info {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #dbeafe;
+        }
+        
+        video {
+            width: 100%;
+            max-width: 450px;
+            height: 320px;
+            object-fit: cover;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin: 15px 0;
+            background-color: #f1f5f9;
+        }
+        
+        .audio-visualizer {
+            width: 100%;
+            height: 120px;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+        }
+        
+        .visualizer-bar {
+            width: 12px;
+            height: 60px;
+            background-color: #2b6cb0;
+            margin: 0 3px;
+            border-radius: 6px;
+            transition: height 0.1s ease;
+        }
+        
+        .permission-guide {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8fafc;
+            border-left: 4px solid #2b6cb0;
+            border-radius: 8px;
+        }
+        
+        .permission-guide h3 {
+            color: #2b6cb0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .permission-guide h4 {
+            color: #475569;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .permission-guide ul {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .permission-guide li {
+            margin-bottom: 8px;
+            color: #64748b;
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 40px;
+            color: #2b6cb0;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        
+        .aviation-warning {
+            background-color: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .aviation-warning h4 {
+            color: #92400e;
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        
+        .aviation-warning p {
+            color: #92400e;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>设备测试 - 飞机检修远程操作系统</h1>
+        
+        <div class="aviation-warning">
+            <h4>系统使用说明</h4>
+            <p>本页面用于测试摄像头和麦克风设备，确保您的设备能够正常工作以进行远程飞机检修操作。</p>
+        </div>
+        
+        <!-- 摄像头测试 -->
+        <div class="test-section">
+            <h2>1. 摄像头测试</h2>
+            <div class="test-controls">
+                <button id="test-camera">测试摄像头</button>
+                <button id="stop-camera" disabled>停止摄像头</button>
+            </div>
+            <video id="camera-preview" autoplay></video>
+            <div id="camera-result" class="test-result"></div>
+        </div>
+        
+        <!-- 麦克风测试 -->
+        <div class="test-section">
+            <h2>2. 麦克风测试</h2>
+            <div class="test-controls">
+                <button id="test-microphone">测试麦克风</button>
+                <button id="stop-microphone" disabled>停止麦克风</button>
+            </div>
+            <div class="audio-visualizer" id="audio-visualizer">
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+            </div>
+            <div id="microphone-result" class="test-result"></div>
+        </div>
+        
+        <!-- 系统信息 -->
+        <div class="test-section">
+            <h2>3. 系统信息</h2>
+            <div id="system-info" class="test-result info">
+                <!-- 系统信息将在此动态添加 -->
+            </div>
+        </div>
+        
+        <!-- 权限设置指南 -->
+        <div class="permission-guide">
+            <h3>权限设置指南</h3>
+            <p>如果测试失败，请按照以下步骤检查权限设置：</p>
+            
+            <h4>浏览器权限设置：</h4>
+            <ul>
+                <li><strong>Chrome/Edge：</strong>点击地址栏左侧的锁图标 → 选择"站点设置" → 将摄像头和麦克风设置为"允许"</li>
+                <li><strong>Firefox：</strong>点击地址栏左侧的信息图标 → 选择"更多信息" → 点击"权限"标签 → 允许使用摄像头和麦克风</li>
+            </ul>
+            
+            <h4>系统权限设置：</h4>
+            <ul>
+                <li><strong>Windows：</strong>开始菜单 → 设置 → 隐私 → 摄像头/麦克风 → 确保"允许应用访问您的摄像头/麦克风"已开启</li>
+                <li><strong>macOS：</strong>苹果菜单 → 系统偏好设置 → 安全性与隐私 → 隐私 → 摄像头/麦克风 → 确保浏览器已被勾选</li>
+            </ul>
+            
+            <h4>常见问题：</h4>
+            <ul>
+                <li>确保没有其他应用正在使用摄像头或麦克风</li>
+                <li>重启浏览器后重试</li>
+                <li>尝试使用其他浏览器</li>
+                <li>检查设备驱动是否正常</li>
+                <li>确保网络连接稳定</li>
+            </ul>
+        </div>
+        
+        <a href="/" class="back-link">返回系统主页面</a>
+    </div>
+    
+    <script>
+        // 全局变量
+        let testCameraBtn, stopCameraBtn, cameraPreview, cameraResult;
+        let testMicrophoneBtn, stopMicrophoneBtn, audioVisualizer, microphoneResult;
+        let systemInfo;
+        let cameraStream = null;
+        let microphoneStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let animationId = null;
+        
+        // 初始化
+        function init() {
+            // 获取DOM元素
+            testCameraBtn = document.getElementById('test-camera');
+            stopCameraBtn = document.getElementById('stop-camera');
+            cameraPreview = document.getElementById('camera-preview');
+            cameraResult = document.getElementById('camera-result');
+            
+            testMicrophoneBtn = document.getElementById('test-microphone');
+            stopMicrophoneBtn = document.getElementById('stop-microphone');
+            audioVisualizer = document.getElementById('audio-visualizer');
+            microphoneResult = document.getElementById('microphone-result');
+            
+            systemInfo = document.getElementById('system-info');
+            
+            // 检查元素是否获取成功
+            if (!testCameraBtn || !stopCameraBtn || !testMicrophoneBtn || !stopMicrophoneBtn) {
+                console.error('无法获取DOM元素，请检查页面结构');
+                return;
+            }
+            
+            displaySystemInfo();
+            setupEventListeners();
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            testCameraBtn.addEventListener('click', testCamera);
+            stopCameraBtn.addEventListener('click', stopCamera);
+            testMicrophoneBtn.addEventListener('click', testMicrophone);
+            stopMicrophoneBtn.addEventListener('click', stopMicrophone);
+        }
+        
+        // 显示系统信息
+        function displaySystemInfo() {
+            const info = {
+                browser: navigator.userAgent,
+                webrtcSupported: 'mediaDevices' in navigator && navigator.mediaDevices && 'getUserMedia' in navigator.mediaDevices,
+                cameras: 'mediaDevices' in navigator && navigator.mediaDevices && 'enumerateDevices' in navigator.mediaDevices,
+                location: window.location.href
+            };
+            
+            let html = `
+                <p><strong>浏览器：</strong>${info.browser}</p>
+                <p><strong>WebRTC支持：</strong>${info.webrtcSupported ? '✅ 支持' : '❌ 不支持'}</p>
+                <p><strong>设备枚举支持：</strong>${info.cameras ? '✅ 支持' : '❌ 不支持'}</p>
+                <p><strong>当前地址：</strong>${info.location}</p>
+            `;
+            
+            systemInfo.innerHTML = html;
+            
+            if (info.cameras) {
+                enumerateDevices();
+            }
+        }
+        
+        // 枚举设备
+        async function enumerateDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const cameras = devices.filter(device => device.kind === 'videoinput');
+                const microphones = devices.filter(device => device.kind === 'audioinput');
+                
+                let deviceInfo = `
+                    <p><strong>可用摄像头：</strong>${cameras.length} 个</p>
+                    <p><strong>可用麦克风：</strong>${microphones.length} 个</p>
+                `;
+                
+                if (cameras.length > 0) {
+                    deviceInfo += '<p><strong>摄像头列表：</strong></p><ul>';
+                    cameras.forEach((camera, index) => {
+                        deviceInfo += `<li>摄像头 ${index + 1}: ${camera.label || '未知设备'}</li>`;
+                    });
+                    deviceInfo += '</ul>';
+                }
+                
+                if (microphones.length > 0) {
+                    deviceInfo += '<p><strong>麦克风列表：</strong></p><ul>';
+                    microphones.forEach((mic, index) => {
+                        deviceInfo += `<li>麦克风 ${index + 1}: ${mic.label || '未知设备'}</li>`;
+                    });
+                    deviceInfo += '</ul>';
+                }
+                
+                systemInfo.innerHTML += deviceInfo;
+            } catch (error) {
+                console.error('枚举设备失败:', error);
+                systemInfo.innerHTML += '<p><strong>设备枚举失败：</strong>无法获取设备列表</p>';
+            }
+        }
+        
+        // 测试摄像头
+        async function testCamera() {
+            try {
+                // 检查mediaDevices是否可用
+                if (!('mediaDevices' in navigator) || !navigator.mediaDevices || !('getUserMedia' in navigator.mediaDevices)) {
+                    throw new Error('浏览器不支持媒体设备访问');
+                }
+                
+                // 停止之前的流
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // 显示权限请求提示
+                cameraResult.className = 'test-result info';
+                cameraResult.innerHTML = '<p>🔍 正在请求摄像头权限，请在浏览器提示中允许使用摄像头。</p>';
+                
+                // 请求摄像头权限
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraPreview.srcObject = cameraStream;
+                
+                // 更新UI
+                cameraResult.className = 'test-result success';
+                cameraResult.innerHTML = '<p>✅ 摄像头测试成功！</p><p>摄像头已成功启动，您应该能看到自己的视频预览。</p>';
+                
+                testCameraBtn.disabled = true;
+                stopCameraBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('摄像头测试失败:', error);
+                
+                let errorMessage = '❌ 摄像头测试失败！';
+                switch (error.name) {
+                    case 'NotAllowedError':
+                        errorMessage += '<p>原因：用户拒绝了摄像头权限请求</p>';
+                        errorMessage += '<p>请检查浏览器和系统权限设置，确保允许使用摄像头。</p>';
+                        errorMessage += '<p>在Chrome中：点击地址栏左侧的锁图标 → 选择"站点设置" → 将摄像头设置为"允许"</p>';
+                        break;
+                    case 'NotFoundError':
+                        errorMessage += '<p>原因：未找到摄像头设备</p>';
+                        errorMessage += '<p>请确保摄像头已正确连接到计算机。</p>';
+                        break;
+                    case 'NotReadableError':
+                        errorMessage += '<p>原因：摄像头被其他应用占用</p>';
+                        errorMessage += '<p>请关闭可能正在使用摄像头的其他应用程序。</p>';
+                        break;
+                    default:
+                        errorMessage += `<p>原因：${error.message}</p>`;
+                        errorMessage += '<p>请尝试刷新页面后重试，或使用其他浏览器。</p>';
+                }
+                
+                cameraResult.className = 'test-result error';
+                cameraResult.innerHTML = errorMessage;
+            }
+        }
+        
+        // 停止摄像头
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                cameraPreview.srcObject = null;
+            }
+            
+            cameraResult.className = 'test-result info';
+            cameraResult.innerHTML = '<p>摄像头已停止。</p>';
+            
+            testCameraBtn.disabled = false;
+            stopCameraBtn.disabled = true;
+        }
+        
+        // 测试麦克风
+        async function testMicrophone() {
+            try {
+                // 检查mediaDevices是否可用
+                if (!('mediaDevices' in navigator) || !navigator.mediaDevices || !('getUserMedia' in navigator.mediaDevices)) {
+                    throw new Error('浏览器不支持媒体设备访问');
+                }
+                
+                // 停止之前的流
+                if (microphoneStream) {
+                    microphoneStream.getTracks().forEach(track => track.stop());
+                }
+                
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+                
+                // 显示权限请求提示
+                microphoneResult.className = 'test-result info';
+                microphoneResult.innerHTML = '<p>🔍 正在请求麦克风权限，请在浏览器提示中允许使用麦克风。</p>';
+                
+                // 请求麦克风权限
+                microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // 初始化音频分析器
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                
+                const source = audioContext.createMediaStreamSource(microphoneStream);
+                source.connect(analyser);
+                
+                // 开始音频可视化
+                visualizeAudio();
+                
+                // 更新UI
+                microphoneResult.className = 'test-result success';
+                microphoneResult.innerHTML = '<p>✅ 麦克风测试成功！</p><p>麦克风已成功启动，说话时您应该能看到音频可视化效果。</p>';
+                
+                testMicrophoneBtn.disabled = true;
+                stopMicrophoneBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('麦克风测试失败:', error);
+                
+                let errorMessage = '❌ 麦克风测试失败！';
+                switch (error.name) {
+                    case 'NotAllowedError':
+                        errorMessage += '<p>原因：用户拒绝了麦克风权限请求</p>';
+                        errorMessage += '<p>请检查浏览器和系统权限设置，确保允许使用麦克风。</p>';
+                        errorMessage += '<p>在Chrome中：点击地址栏左侧的锁图标 → 选择"站点设置" → 将麦克风设置为"允许"</p>';
+                        break;
+                    case 'NotFoundError':
+                        errorMessage += '<p>原因：未找到麦克风设备</p>';
+                        errorMessage += '<p>请确保麦克风已正确连接到计算机。</p>';
+                        break;
+                    case 'NotReadableError':
+                        errorMessage += '<p>原因：麦克风被其他应用占用</p>';
+                        errorMessage += '<p>请关闭可能正在使用麦克风的其他应用程序。</p>';
+                        break;
+                    default:
+                        errorMessage += `<p>原因：${error.message}</p>`;
+                        errorMessage += '<p>请尝试刷新页面后重试，或使用其他浏览器。</p>';
+                }
+                
+                microphoneResult.className = 'test-result error';
+                microphoneResult.innerHTML = errorMessage;
+            }
+        }
+        
+        // 音频可视化
+        function visualizeAudio() {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            const bars = audioVisualizer.querySelectorAll('.visualizer-bar');
+            
+            function updateVisualizer() {
+                analyser.getByteFrequencyData(dataArray);
+                
+                const barCount = bars.length;
+                for (let i = 0; i < barCount; i++) {
+                    const barHeight = (dataArray[i] / 255) * 100;
+                    bars[i].style.height = `${barHeight}px`;
+                }
+                
+                animationId = requestAnimationFrame(updateVisualizer);
+            }
+            
+            updateVisualizer();
+        }
+        
+        // 停止麦克风
+        function stopMicrophone() {
+            if (microphoneStream) {
+                microphoneStream.getTracks().forEach(track => track.stop());
+                microphoneStream = null;
+            }
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            // 重置可视化效果
+            const bars = audioVisualizer.querySelectorAll('.visualizer-bar');
+            bars.forEach(bar => {
+                bar.style.height = '60px';
+            });
+            
+            microphoneResult.className = 'test-result info';
+            microphoneResult.innerHTML = '<p>麦克风已停止。</p>';
+            
+            testMicrophoneBtn.disabled = false;
+            stopMicrophoneBtn.disabled = true;
+        }
+        
+        // 初始化应用
+        window.onload = init;
+    </script>
+</body>
+</html>

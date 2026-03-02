@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>远程视频 - 飞机检修远程操作系统</title>
+    <link rel="stylesheet" href="static/style.css">
+    <link rel="stylesheet" href="/static/unified-header.css">
+    <style>
+        /* 页面容器 */
+        /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .page-header h1 {
+            color: #2b6cb0;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        /* 视频系统区域 */
+        .video-system-section {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        /* 加入房间部分 */
+        #join-room {
+            margin-bottom: 40px;
+        }
+        
+        .aviation-warning {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .aviation-warning h4 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+        }
+        
+        .aviation-warning p {
+            color: #4a5568;
+            margin: 0;
+        }
+        
+        h2 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #2b6cb0;
+            box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+        }
+        
+        .success {
+            background: #38a169;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+        
+        .success:hover {
+            background: #2f855a;
+            transform: translateY(-2px);
+        }
+        
+        .primary {
+            background: #2b6cb0;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+        
+        .test-link {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .test-link a {
+            color: #2b6cb0;
+            text-decoration: none;
+        }
+        
+        .test-link a:hover {
+            text-decoration: underline;
+        }
+        
+        /* 通话部分 */
+        #call-section {
+            margin-top: 40px;
+        }
+        
+        .call-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .call-header h2 {
+            margin: 0;
+        }
+        
+        .danger {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .danger:hover {
+            background: #c53030;
+            transform: translateY(-2px);
+        }
+        
+        .video-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .video-wrapper {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .video-wrapper:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+        
+        .video-wrapper.main {
+            grid-column: 1 / -1;
+            order: -1;
+        }
+        
+        .video-wrapper.main video {
+            height: 500px;
+        }
+        
+        .video-wrapper h3 {
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        
+        .video-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 10;
+        }
+        
+        .video-status.online {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .video-status.offline {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #1a202c;
+            transition: all 0.3s ease;
+        }
+        
+        video:hover {
+            filter: brightness(1.05);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .participants {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        
+        .participants h3 {
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        
+        .participants ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .participants li {
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 隐藏类 */
+        .hidden {
+            display: none;
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 聊天区域样式 */
+        .chat-section {
+            margin-top: 30px;
+            background: #f8fafc;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .chat-section h3 {
+            margin: 0;
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 300px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .chat-message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.4;
+        }
+        
+        .chat-message.sent {
+            align-self: flex-end;
+            background: #2b6cb0;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-message.received {
+            align-self: flex-start;
+            background: white;
+            color: #2d3748;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .message-sender {
+            font-size: 12px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .message-content {
+            word-wrap: break-word;
+        }
+        
+        .message-time {
+            font-size: 10px;
+            margin-top: 4px;
+            opacity: 0.7;
+            text-align: right;
+        }
+        
+        .chat-input-area {
+            display: flex;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            gap: 10px;
+        }
+        
+        .chat-input-area input {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+        
+        .chat-input-area input:focus {
+            outline: none;
+            border-color: #2b6cb0;
+        }
+        
+        .chat-input-area button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-header h1 {
+                font-size: 24px;
+            }
+            
+            .video-system-section {
+                padding: 20px;
+            }
+            
+            .video-container {
+                grid-template-columns: 1fr;
+            }
+            
+            video {
+                height: 250px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .chat-container {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+                <nav class="unified-navbar">
+            <div class="unified-navbar-left">
+                <a href="/" class="unified-home-btn">返回主页</a>
+                <div class="unified-navbar-menu">
+                    <a href="/video-system" class="unified-navbar-menu">远程视频</a>
+                    <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+                    <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+                    <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+                    <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a></div>
+            </div>
+            
+            <div class="unified-navbar-right">
+                <div class="unified-user-info" id="userInfo">
+                    <div class="unified-user-avatar" id="user-avatar">U</div>
+                    <div class="unified-user-details">
+                        <div class="unified-user-name" id="user-name">未登录</div>
+                        <div class="unified-user-role" id="user-role">访客</div>
+                    </div>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/profile">查看个人信息</a>
+                    <a href="/system-settings">系统设置</a>
+                    <a href="/system-monitor">系统监控</a>
+                    <a href="/report-generation">报表生成</a>
+                    <a href="/permission-management">权限管理</a>
+            <a href="/login" class="logout">退出登录</a>
+                </div>
+            </div>
+        </nav>
+        <script src="/static/unified-header.js"></script>
+<!-- 页面标题 -->
+        <div class="page-header">
+            <h1>远程视频</h1>
+            <p>实时连接现场技术人员，提供远程指导和检修支持</p>
+        </div>
+        
+        <!-- 视频系统区域 -->
+        <div class="video-system-section">
+            <!-- 加入房间部分 -->
+            <div id="join-room">
+                <div class="aviation-warning">
+                    <h4>系统使用说明</h4>
+                    <p>本系统用于飞机检修远程协助，确保您的设备已连接稳定网络并获得必要的摄像头和麦克风权限。</p>
+                </div>
+                
+                <h2>检修任务房间</h2>
+                <div class="form-group">
+                    <label for="room-id">任务编号 (Room ID):</label>
+                    <input type="text" id="room-id" placeholder="输入任务编号，如: AM-2026-001">
+                    <button id="create-room-btn" class="success">创建新任务</button>
+                </div>
+                <div class="form-group">
+                    <label for="user-id">技术人员ID (User ID):</label>
+                    <input type="text" id="user-id" placeholder="输入您的姓名或工号">
+                </div>
+                <button id="join-btn" class="primary">加入任务</button>
+                <div class="test-link">
+                    <p>设备连接问题？<a href="/device-test">点击这里测试摄像头和麦克风</a></p>
+                </div>
+            </div>
+            
+            <!-- 通话部分 -->
+            <div id="call-section" class="hidden">
+                <div class="call-header">
+                    <h2>检修任务: <span id="current-room"></span></h2>
+                    <button id="leave-btn" class="danger">结束任务</button>
+                </div>
+                
+                <div class="video-container">
+                    <div class="video-wrapper">
+                        <h3>本地视图</h3>
+                        <div class="video-status online">在线</div>
+                        <video id="local-video" autoplay muted></video>
+                    </div>
+                    <div id="remote-videos">
+                        <!-- 远程视频将在此动态添加 -->
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="mic-btn" class="secondary">关闭麦克风</button>
+                    <button id="video-btn" class="secondary">关闭摄像头</button>
+                    <button id="flip-camera-btn" class="secondary">翻转摄像头</button>
+                    <button id="screen-btn" class="success">共享屏幕</button>
+                </div>
+                
+                <div class="participants">
+                    <h3>技术团队成员</h3>
+                    <ul id="participant-list">
+                        <!-- 参会者列表将在此动态添加 -->
+                    </ul>
+                </div>
+                
+                <!-- 文字聊天区域 -->
+                <div class="chat-section">
+                    <h3>实时聊天</h3>
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages">
+                            <!-- 聊天消息将在此动态添加 -->
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-input" placeholder="输入消息..." maxlength="500">
+                            <button id="send-message-btn" class="success">发送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="static/script.js"></script>
+    <script>
+        // 登录检查
+        function checkLogin() {
+            const currentUser = localStorage.getItem('currentUser');
+            
+            if (!currentUser) {
+                // 未登录，重定向到登录页面
+                window.location.href = '/login';
+            }
+        }
+        
+        // 页面加载时检查登录状态
+        window.addEventListener('load', checkLogin);
+    </script>
+</body>
+</html>

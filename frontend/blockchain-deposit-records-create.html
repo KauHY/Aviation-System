@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="创建维修记录 - 基于Python+区块链的民航客机检修记录存证系统">
+    <meta name="keywords" content="区块链,民航检修,维修记录,创建记录,技术人员">
+    <meta name="author" content="航空技术团队">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/unified-header.css">
+    <style>
+        /* 字体优化 */
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-display: swap;
+            background-color: #f8fafc;
+        }
+        
+        /* 容器样式 */
+        /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* 导航栏 */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+        
+        .navbar-logo h1 {
+            font-size: 20px;
+            color: #2b6cb0;
+            margin: 0;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .navbar-menu a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-menu a:hover {
+            background: #f1f5f9;
+            color: #2b6cb0;
+        }
+        
+        .navbar-menu a.active {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2b6cb0;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .logout-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        /* 页面标题 */
+        .page-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .page-title h1 {
+            color: #2b6cb0;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-title p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        /* 表单容器 */
+        .form-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2b6cb0;
+            box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .form-group.checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group.checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        
+        .form-group.checkbox-group label {
+            margin: 0;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+        
+        .btn-tertiary {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .btn-tertiary:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.3);
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+        }
+        
+        .btn-group {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        /* 消息提示 */
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .message.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border-left: 4px solid #68d391;
+        }
+        
+        .message.error {
+            background: #fed7d7;
+            color: #c53030;
+            border-left: 4px solid #fc8181;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-title h1 {
+                font-size: 24px;
+            }
+            
+            .form-container {
+                padding: 30px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 25px;
+            }
+            
+            .btn-group {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .btn {
+                margin-right: 0;
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+                        <nav class="unified-navbar">
+            <div class="unified-navbar-left">
+                <a href="/" class="unified-home-btn">返回主页</a>
+                <div class="unified-navbar-menu">
+                    <a href="/video-system" class="unified-navbar-menu">远程视频</a>
+                    <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+                    <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+                    <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+                    <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a></div>
+            </div>
+            
+            <div class="unified-navbar-right">
+                <div class="unified-user-info" id="userInfo">
+                    <div class="unified-user-avatar" id="user-avatar">U</div>
+                    <div class="unified-user-details">
+                        <div class="unified-user-name" id="user-name">未登录</div>
+                        <div class="unified-user-role" id="user-role">访客</div>
+                    </div>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/profile">查看个人信息</a>
+                    <a href="/system-settings">系统设置</a>
+                    <a href="/system-monitor">系统监控</a>
+                    <a href="/report-generation">报表生成</a>
+                    <a href="/permission-management">权限管理</a>
+            <a href="/login" class="logout">退出登录</a>
+                </div>
+            </div>
+        </nav>
+        <script src="/static/unified-header.js"></script>
+<!-- 页面标题 -->
+        <div class="page-title">
+            <h1>创建维修记录</h1>
+            <p>技术人员专用 - 请填写详细的维修信息</p>
+        </div>
+        
+        <!-- 消息提示 -->
+        <div id="message" class="message" style="display: none;"></div>
+        
+        <!-- 表单容器 -->
+        <div class="form-container">
+            <form id="record-form">
+                <!-- 飞机基本信息 -->
+                <h2 style="color: #2d3748; margin-bottom: 30px;">飞机基本信息</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="aircraft-registration">飞机注册号</label>
+                        <input type="text" id="aircraft-registration" name="aircraft_registration" required placeholder="例如：B-1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="aircraft-model">飞机型号</label>
+                        <select id="aircraft-model" name="aircraft_model" required>
+                            <option value="">请选择型号</option>
+                            <option value="B737">波音737</option>
+                            <option value="B747">波音747</option>
+                            <option value="B777">波音777</option>
+                            <option value="B787">波音787</option>
+                            <option value="A320">空客A320</option>
+                            <option value="A330">空客A330</option>
+                            <option value="A350">空客A350</option>
+                            <option value="C919">商飞C919</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="aircraft-series">飞机系列</label>
+                        <input type="text" id="aircraft-series" name="aircraft_series" placeholder="例如：737-800">
+                    </div>
+                    <div class="form-group">
+                        <label for="aircraft-age">机龄（年）</label>
+                        <input type="number" id="aircraft-age" name="aircraft_age" min="0" step="0.1">
+                    </div>
+                </div>
+                
+                <!-- 维修信息 -->
+                <h2 style="color: #2d3748; margin: 40px 0 30px;">维修信息</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maintenance-type">维修类型</label>
+                        <select id="maintenance-type" name="maintenance_type" required>
+                            <option value="">请选择维修类型</option>
+                            <option value="routine">例行检查</option>
+                            <option value="repair">故障维修</option>
+                            <option value="overhaul">大修</option>
+                            <option value="modification">改装</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="maintenance-date">维修日期</label>
+                        <input type="date" id="maintenance-date" name="maintenance_date" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="maintenance-description">维修描述</label>
+                    <textarea id="maintenance-description" name="maintenance_description" required placeholder="请详细描述维修内容、故障原因和解决方案"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maintenance-duration">维修时长（小时）</label>
+                        <input type="number" id="maintenance-duration" name="maintenance_duration" min="0" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="parts-used">使用航材</label>
+                        <input type="text" id="parts-used" name="parts_used" placeholder="例如：发动机滤芯 x 2，液压油 x 5L">
+                    </div>
+                </div>
+                
+                <!-- 必检项目 -->
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="is-rii" name="is_rii">
+                    <label for="is-rii">是否必检项目（RII）</label>
+                </div>
+                
+                <!-- 维修人员信息 -->
+                <h2 style="color: #2d3748; margin: 40px 0 30px;">维修人员信息</h2>
+                
+                <div class="form-group">
+                    <label for="technician-select">选择技术人员</label>
+                    <select id="technician-select" name="technician_id" required>
+                        <option value="">请选择技术人员</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="technician-name">技术人员姓名</label>
+                        <input type="text" id="technician-name" name="technician_name" required placeholder="请输入姓名">
+                    </div>
+                    <div class="form-group">
+                        <label for="technician-id">技术人员工号</label>
+                        <input type="text" id="technician-id" name="technician_id" required placeholder="请输入工号">
+                    </div>
+                </div>
+                
+
+                
+                <!-- 按钮组 -->
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">创建记录</button>
+                    <a href="/blockchain-deposit/records" class="btn btn-secondary">返回列表</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="/static/contract-client.js"></script>
+    <script>
+        // 获取角色名称
+        function getRoleName(role) {
+            const roleMap = {
+                'admin': '总负责人',
+                'manager': '管理人员',
+                'technician': '技术人员',
+                'user': '技术人员'
+            };
+            return roleMap[role] || role;
+        }
+        
+        // 显示消息
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // 3秒后隐藏消息
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 表单提交
+        document.getElementById('record-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // 获取表单数据
+            const formData = {
+                aircraft_registration: document.getElementById('aircraft-registration').value,
+                aircraft_model: document.getElementById('aircraft-model').value,
+                aircraft_series: document.getElementById('aircraft-series').value,
+                aircraft_age: document.getElementById('aircraft-age').value,
+                maintenance_type: document.getElementById('maintenance-type').value,
+                maintenance_date: document.getElementById('maintenance-date').value,
+                maintenance_description: document.getElementById('maintenance-description').value,
+                maintenance_duration: document.getElementById('maintenance-duration').value,
+                parts_used: document.getElementById('parts-used').value,
+                is_rii: document.getElementById('is-rii').checked,
+                technician_name: document.getElementById('technician-name').value,
+                technician_id: document.getElementById('technician-id').value
+            };
+            
+            // 验证表单
+            if (!formData.aircraft_registration || !formData.maintenance_type || !formData.maintenance_date) {
+                showMessage('请填写必填字段', 'error');
+                return;
+            }
+            
+            try {
+                // 调试：检查localStorage中的私钥
+                const privateKey = localStorage.getItem('private_key');
+                console.log('[DEBUG] localStorage中的私钥:', privateKey ? privateKey.substring(0, 100) + '...' : '不存在');
+                console.log('[DEBUG] 私钥长度:', privateKey ? privateKey.length : 0);
+                
+                // 初始化合约客户端
+                const contractClient = new ContractClient();
+                await contractClient.init();
+                
+                // 获取当前用户的地址
+                const userAddress = localStorage.getItem('currentUserAddress');
+                if (!userAddress) {
+                    showMessage('用户地址不存在，请重新登录', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    return;
+                }
+                
+                // 检查私钥是否存在
+                if (!privateKey) {
+                    showMessage('您的私钥不存在，需要重新登录以获取私钥', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 3000);
+                    return;
+                }
+                
+                // 调用智能合约创建记录
+                const result = await contractClient.createRecord(
+                    formData.aircraft_registration,
+                    formData.maintenance_type,
+                    formData.maintenance_description,
+                    userAddress
+                );
+                
+                if (result.success) {
+                    showMessage('维修记录创建成功！记录ID：' + result.record_id + '，区块哈希：' + result.block_hash, 'success');
+                    
+                    // 3秒后跳转到记录列表
+                    setTimeout(() => {
+                        window.location.href = '/blockchain-deposit/records';
+                    }, 3000);
+                } else {
+                    showMessage('创建失败：' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('创建记录失败:', error);
+                console.error('[DEBUG] 错误详情:', error.message);
+                console.error('[DEBUG] 错误堆栈:', error.stack);
+                
+                // 如果是私钥不存在的错误，引导用户重新登录
+                if (error.message && error.message.includes('私钥不存在')) {
+                    showMessage('您的私钥不存在，需要重新登录以获取私钥', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 3000);
+                } else {
+                    showMessage('网络错误，请稍后重试', 'error');
+                }
+            }
+        });
+        
+        // 加载技术人员列表
+        async function loadTechnicians() {
+            try {
+                const response = await fetch('/api/inspectors');
+                const data = await response.json();
+                if (data.success) {
+                    const technicianSelect = document.getElementById('technician-select');
+                    // 清空现有选项（保留默认选项）
+                    technicianSelect.innerHTML = '<option value="">请选择技术人员</option>';
+                    
+                    data.inspectors.forEach(technician => {
+                        const option = document.createElement('option');
+                        option.value = technician.id;
+                        option.textContent = technician.name;
+                        technicianSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载技术人员失败:', error);
+            }
+        }
+        
+        // 监听技术人员选择变化
+        document.getElementById('technician-select').addEventListener('change', function() {
+            const technicianId = this.value;
+            if (technicianId) {
+                // 从技术人员列表中找到对应人员并填充信息
+                fetch('/api/inspectors')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const technician = data.inspectors.find(t => t.id === technicianId);
+                            if (technician) {
+                                document.getElementById('technician-name').value = technician.name;
+                                document.getElementById('technician-id').value = technician.id;
+                            }
+                        }
+                    });
+            } else {
+                // 清空字段
+                document.getElementById('technician-name').value = '';
+                document.getElementById('technician-id').value = '';
+            }
+        });
+        
+        // 页面加载完成后更新用户信息和加载技术人员列表
+        window.onload = function() {
+            loadTechnicians();
+        };
+    </script>
+</body>
+</html>

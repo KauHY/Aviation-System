@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检测人员分配管理 - 飞机检修远程操作系统</title>
+    <style>
+        /* 页面容器 */
+        /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* 导航栏 */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.8s ease-out;
+        }
+        
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+        
+        .navbar-logo h1 {
+            font-size: 20px;
+            color: #2b6cb0;
+            margin: 0;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .navbar-menu a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-menu a:hover {
+            background: #f1f5f9;
+            color: #2b6cb0;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2b6cb0;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .logout-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .page-header h1 {
+            color: #2b6cb0;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        /* 检测人员分配管理区域 */
+        .inspector-assignment-section {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .section-header h3 {
+            color: #2d3748;
+            font-size: 20px;
+            margin: 0;
+        }
+        
+        .inspector-assignment-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+        
+        .inspector-section,
+        .task-section {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .inspector-list,
+        .task-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .inspector-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .inspector-item:hover {
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+        
+        .inspector-info h4 {
+            color: #2b6cb0;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .inspector-info p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .inspector-status {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .inspector-status.available {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .inspector-status.busy {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .assignment-task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .assignment-task-item:hover {
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+        
+        .assignment-task-info h4 {
+            color: #2b6cb0;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .assignment-task-info p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .assignment-task-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .btn.primary {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .btn.primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        .btn.success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn.success:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+        
+        .btn.warning {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .btn.warning:hover {
+            background: #dd6b20;
+            transform: translateY(-1px);
+        }
+        
+        .btn.danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn.danger:hover {
+            background: #e53e3e;
+            transform: translateY(-1px);
+        }
+        
+        .btn.assign {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn.assign:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+        
+        .btn.complete {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .btn.complete:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.active {
+            display: block;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        /* 任务状态标签 */
+        .task-status {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        
+        .task-status.pending {
+            background: #feebc8;
+            color: #c05621;
+        }
+        
+        .task-status.assigned {
+            background: #bee3f8;
+            color: #2b6cb0;
+        }
+        
+        .task-status.completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-header h1 {
+                font-size: 24px;
+            }
+            
+            .inspector-assignment-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .inspector-assignment-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+                        <nav class="unified-navbar">
+            <div class="unified-navbar-left">
+                <a href="/" class="unified-home-btn">返回主页</a>
+                <div class="unified-navbar-menu">
+                    <a href="/video-system" class="unified-navbar-menu">远程视频</a>
+                    <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+                    <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+                    <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+                    <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a></div>
+            </div>
+            
+            <div class="unified-navbar-right">
+                <div class="unified-user-info" id="userInfo">
+                    <div class="unified-user-avatar" id="user-avatar">U</div>
+                    <div class="unified-user-details">
+                        <div class="unified-user-name" id="user-name">未登录</div>
+                        <div class="unified-user-role" id="user-role">访客</div>
+                    </div>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/profile">查看个人信息</a>
+                    <a href="/system-settings">系统设置</a>
+                    <a href="/system-monitor">系统监控</a>
+                    <a href="/report-generation">报表生成</a>
+                    <a href="/permission-management">权限管理</a>
+            <a href="/login" class="logout">退出登录</a>
+                </div>
+            </div>
+        </nav>
+        <script src="/static/unified-header.js"></script>
+<!-- 页面标题 -->
+        <div class="page-header">
+            <h1>检测人员分配管理</h1>
+            <p>管理检测人员信息和分配检修任务，确保工作高效有序进行</p>
+        </div>
+        
+        <!-- 检测人员分配管理区域 -->
+        <div class="inspector-assignment-section">
+            <div class="inspector-assignment-container">
+                <!-- 检测人员列表 -->
+                <div class="inspector-section">
+                    <div class="section-header">
+                        <h3>检测人员列表</h3>
+                    </div>
+                    <div class="inspector-list" id="inspector-list">
+                        <!-- 检测人员列表将在此动态添加 -->
+                    </div>
+                </div>
+                
+                <!-- 任务列表 -->
+                <div class="task-section">
+                    <div class="section-header">
+                        <h3>检测任务列表</h3>
+                        <button class="btn primary" id="create-task-btn">创建任务</button>
+                    </div>
+                    <div class="task-list" id="task-list">
+                        <!-- 任务列表将在此动态添加 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 创建/编辑任务模态框 -->
+        <div id="task-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">创建任务</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="task-form">
+                    <input type="hidden" id="task-id">
+                    <div class="form-group">
+                        <label for="flight-number">航班号</label>
+                        <input type="text" id="flight-number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-type">任务类型</label>
+                        <input type="text" id="task-type" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="priority">优先级</label>
+                        <select id="priority" required>
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadline">截止时间</label>
+                        <input type="datetime-local" id="deadline" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn" id="cancel-btn">取消</button>
+                        <button type="submit" class="btn success" id="save-btn">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="static/script.js"></script>
+    <script>
+        // 登录检查
+        function checkLogin() {
+            const currentUser = localStorage.getItem('currentUser');
+            const currentUserRole = localStorage.getItem('currentUserRole');
+            
+            if (!currentUser) {
+                // 未登录，重定向到登录页面
+                window.location.href = '/login';
+            } else {
+                // 更新用户信息
+                document.getElementById('user-name').textContent = currentUser;
+                document.getElementById('user-avatar').textContent = currentUser.charAt(0).toUpperCase();
+                
+                // 更新用户角色显示
+                const userRoleElement = document.querySelector('.user-role');
+                if (userRoleElement) {
+                    let roleText = '技术人员';
+                    if (currentUserRole === 'manager') {
+                        roleText = '管理人员';
+                    } else if (currentUserRole === 'admin') {
+                        roleText = '总负责人';
+                    }
+                    userRoleElement.textContent = roleText;
+                }
+            }
+        }
+        
+        // 加载检测人员列表
+        async function loadInspectors() {
+            try {
+                const response = await fetch('/api/inspectors');
+                const data = await response.json();
+                if (data.success) {
+                    const inspectorList = document.getElementById('inspector-list');
+                    inspectorList.innerHTML = '';
+                    
+                    data.inspectors.forEach(inspector => {
+                        const inspectorItem = document.createElement('div');
+                        inspectorItem.className = 'inspector-item';
+                        inspectorItem.innerHTML = `
+                            <div class="inspector-info">
+                                <h4>${inspector.name}</h4>
+                                <p>${inspector.position}</p>
+                                <p>专长: ${inspector.specialty}</p>
+                                ${inspector.current_task ? `<p>当前任务: ${inspector.current_task}</p>` : ''}
+                            </div>
+                            <div class="inspector-status ${inspector.status}">
+                                ${inspector.status === 'available' ? '可用' : '忙'}
+                            </div>
+                        `;
+                        inspectorList.appendChild(inspectorItem);
+                    });
+                }
+            } catch (error) {
+                console.error('加载检测人员失败:', error);
+            }
+        }
+        
+        // 加载任务列表
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                const data = await response.json();
+                if (data.success) {
+                    const taskList = document.getElementById('task-list');
+                    taskList.innerHTML = '';
+                    
+                    data.tasks.forEach(task => {
+                        const taskItem = document.createElement('div');
+                        taskItem.className = 'assignment-task-item';
+                        taskItem.innerHTML = `
+                            <div class="assignment-task-info">
+                                <div class="task-status ${task.status}">
+                                    ${task.status === 'pending' ? '待分配' : task.status === 'assigned' ? '已分配' : '已完成'}
+                                </div>
+                                <h4>${task.flight_number} - ${task.task_type}</h4>
+                                <p>优先级: ${task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}</p>
+                                <p>截止时间: ${task.deadline}</p>
+                                ${task.assignee_id ? `<p>已分配给: 检测人员 ${task.assignee_id}</p>` : ''}
+                            </div>
+                            <div class="assignment-task-actions">
+                                ${task.status !== 'completed' ? `
+                                    <button class="btn assign" onclick="assignTask('${task.id}')">分配</button>
+                                    ${task.status === 'assigned' ? `<button class="btn complete" onclick="completeTask('${task.id}')">完成</button>` : ''}
+                                ` : ''}
+                                <button class="btn warning" onclick="editTask('${task.id}')">编辑</button>
+                                <button class="btn danger" onclick="deleteTask('${task.id}')">删除</button>
+                            </div>
+                        `;
+                        taskList.appendChild(taskItem);
+                    });
+                }
+            } catch (error) {
+                console.error('加载任务失败:', error);
+            }
+        }
+        
+        // 分配任务
+        async function assignTask(taskId) {
+            try {
+                const inspectorId = prompt('请输入检测人员ID:');
+                if (!inspectorId) return;
+                
+                const response = await fetch('/api/tasks/assign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task_id: taskId, inspector_id: inspectorId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('任务分配成功');
+                    await loadInspectors();
+                    await loadTasks();
+                } else {
+                    alert('任务分配失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('分配任务失败:', error);
+                alert('分配任务失败');
+            }
+        }
+        
+        // 完成任务
+        async function completeTask(taskId) {
+            try {
+                const response = await fetch('/api/tasks/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task_id: taskId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('任务完成成功');
+                    await loadInspectors();
+                    await loadTasks();
+                } else {
+                    alert('任务完成失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('完成任务失败:', error);
+                alert('完成任务失败');
+            }
+        }
+        
+        // 创建任务
+        async function createTask(taskData) {
+            try {
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('任务创建成功');
+                    await loadTasks();
+                    return true;
+                } else {
+                    alert('任务创建失败: ' + data.message);
+                    return false;
+                }
+            } catch (error) {
+                console.error('创建任务失败:', error);
+                alert('创建任务失败');
+                return false;
+            }
+        }
+        
+        // 获取任务详情
+        async function getTask(taskId) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`);
+                const data = await response.json();
+                if (data.success) {
+                    return data.task;
+                } else {
+                    alert('获取任务详情失败: ' + data.message);
+                    return null;
+                }
+            } catch (error) {
+                console.error('获取任务详情失败:', error);
+                return null;
+            }
+        }
+        
+        // 更新任务
+        async function updateTask(taskId, taskData) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('任务更新成功');
+                    await loadTasks();
+                    return true;
+                } else {
+                    alert('任务更新失败: ' + data.message);
+                    return false;
+                }
+            } catch (error) {
+                console.error('更新任务失败:', error);
+                alert('更新任务失败');
+                return false;
+            }
+        }
+        
+        // 删除任务
+        async function deleteTask(taskId) {
+            if (!confirm('确定要删除这个任务吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('任务删除成功');
+                    await loadTasks();
+                } else {
+                    alert('任务删除失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('删除任务失败:', error);
+                alert('删除任务失败');
+            }
+        }
+        
+        // 编辑任务
+        async function editTask(taskId) {
+            const task = await getTask(taskId);
+            if (!task) return;
+            
+            // 填充表单
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('flight-number').value = task.flight_number;
+            document.getElementById('task-type').value = task.task_type;
+            document.getElementById('priority').value = task.priority;
+            
+            // 格式化截止时间为 datetime-local 格式
+            const deadline = new Date(task.deadline.replace(' ', 'T'));
+            document.getElementById('deadline').value = deadline.toISOString().slice(0, 16);
+            
+            // 显示模态框
+            document.getElementById('modal-title').textContent = '编辑任务';
+            document.getElementById('task-modal').classList.add('active');
+        }
+        
+        // 模态框操作
+        document.querySelector('.close').addEventListener('click', function() {
+            document.getElementById('task-modal').classList.remove('active');
+            document.getElementById('task-form').reset();
+            document.getElementById('task-id').value = '';
+        });
+        
+        document.getElementById('cancel-btn').addEventListener('click', function() {
+            document.getElementById('task-modal').classList.remove('active');
+            document.getElementById('task-form').reset();
+            document.getElementById('task-id').value = '';
+        });
+        
+        // 点击模态框外部关闭
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('task-modal');
+            if (event.target === modal) {
+                modal.classList.remove('active');
+                document.getElementById('task-form').reset();
+                document.getElementById('task-id').value = '';
+            }
+        });
+        
+        // 表单提交
+        document.getElementById('task-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const taskId = document.getElementById('task-id').value;
+            const taskData = {
+                flight_number: document.getElementById('flight-number').value,
+                task_type: document.getElementById('task-type').value,
+                priority: document.getElementById('priority').value,
+                deadline: document.getElementById('deadline').value
+            };
+            
+            let success;
+            if (taskId) {
+                success = await updateTask(taskId, taskData);
+            } else {
+                success = await createTask(taskData);
+            }
+            
+            if (success) {
+                document.getElementById('task-modal').classList.remove('active');
+                document.getElementById('task-form').reset();
+                document.getElementById('task-id').value = '';
+            }
+        });
+        
+        // 创建任务按钮点击事件
+        document.getElementById('create-task-btn').addEventListener('click', function() {
+            document.getElementById('modal-title').textContent = '创建任务';
+            document.getElementById('task-form').reset();
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-modal').classList.add('active');
+        });
+        
+        // 页面加载时初始化
+        window.addEventListener('load', async function() {
+            checkLogin();
+            await loadInspectors();
+            await loadTasks();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>航班查询 - 飞机检修远程操作系统</title>
+    <link rel="stylesheet" href="/static/unified-header.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- 引入离线机场数据 -->
+    <script src="/static/airports.js"></script>
+    <!-- 引入离线航司数据 -->
+    <script src="/static/airlines.js"></script>
+    <script>
+        // 动态加载中国地图数据
+        fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
+            .then(response => response.json())
+            .then(chinaJson => {
+                echarts.registerMap('china', chinaJson);
+                window.chinaMapLoaded = true;
+                console.log('中国地图数据加载成功');
+            })
+            .catch(error => {
+                console.error('加载中国地图数据失败:', error);
+                window.chinaMapLoaded = false;
+            });
+    </script>
+    <style>
+        /* 页面容器 */
+        /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* 导航栏 */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.8s ease-out;
+        }
+        
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+        
+        .navbar-logo h1 {
+            font-size: 20px;
+            color: #2b6cb0;
+            margin: 0;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .navbar-menu a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-menu a:hover {
+            background: #f1f5f9;
+            color: #2b6cb0;
+        }
+        
+        .navbar-menu a.active {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2b6cb0;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .logout-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            padding: 8px 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .page-header h1 {
+            color: #2b6cb0;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        /* 航班查询区域 */
+        .flight-search-section {
+            background: white;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        .aviation-warning {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .aviation-warning h4 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+        }
+        
+        .aviation-warning p {
+            color: #4a5568;
+            margin: 0;
+        }
+        
+        h2 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .flight-search-form {
+            background: #f8fafc;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #2b6cb0;
+            box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #2b6cb0;
+            box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+        }
+        
+        .btn {
+            background: #2b6cb0;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
+        }
+        
+        .btn.primary {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .btn.primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        .btn.success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn.success:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+        
+        .btn.warning {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .btn.warning:hover {
+            background: #dd6b20;
+            transform: translateY(-1px);
+        }
+        
+        .btn.danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn.danger:hover {
+            background: #e53e3e;
+            transform: translateY(-1px);
+        }
+        
+        .btn.small {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.active {
+            display: block;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        /* 航班操作按钮 */
+        .flight-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* 自动完成列表样式 */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+
+        .autocomplete-items div:hover {
+            background-color: #e9e9e9;
+        }
+
+        .autocomplete-active {
+            background-color: #2b6cb0 !important;
+            color: #ffffff;
+        }
+        
+        /* 加载动画 */
+        .loading {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2b6cb0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 检修记录样式 */
+        .inspection-records {
+            padding: 20px 0;
+        }
+        
+        .inspection-records h3 {
+            color: #2b6cb0;
+            margin-bottom: 20px;
+        }
+        
+        .inspection-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .inspection-item {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2b6cb0;
+        }
+        
+        .inspection-date {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+        
+        .inspection-details h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .inspection-details p {
+            color: #4a5568;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .inspection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-label {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .status-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        
+        .status-value.completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-value.pending {
+            background: #feebc8;
+            color: #c05621;
+        }
+        
+        .view-details-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #2b6cb0;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .view-details-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .no-records {
+            text-align: center;
+            padding: 40px 0;
+            color: #718096;
+        }
+        
+        /* 维修记录详情样式 */
+        .record-detail-content {
+            padding: 20px;
+        }
+        
+        .record-detail-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .record-detail-section:last-child {
+            border-bottom: none;
+        }
+        
+        .record-detail-section h3 {
+            color: #2b6cb0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .record-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .record-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .record-detail-item label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .record-detail-item .value {
+            color: #2d3748;
+            font-size: 15px;
+        }
+        
+        .record-detail-item.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .record-detail-item .value.full {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-badge.pending {
+            background: #feebc8;
+            color: #c05621;
+        }
+        
+        .status-badge.approved {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .status-badge.released {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .signature-info {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .signature-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .signature-item:last-child {
+            border-bottom: none;
+        }
+        
+        .signature-item .label {
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .signature-item .value {
+            color: #2d3748;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .blockchain-info {
+            background: #ebf8ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2b6cb0;
+        }
+        
+        .blockchain-info .hash {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            color: #2c5282;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .map-legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-line {
+            width: 40px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        .legend-line.normal {
+            background: #38a169;
+        }
+        
+        .legend-line.delayed {
+            background: #dd6b20;
+        }
+        
+        .legend-line.cancelled {
+            background: #e53e3e;
+        }
+        
+        .btn.secondary {
+            background: #718096;
+            color: white;
+        }
+        
+        .btn.secondary:hover {
+            background: #4a5568;
+            transform: translateY(-1px);
+        }
+        
+        /* 航班详情样式 */
+        .flight-details {
+            padding: 20px 0;
+        }
+        
+        .flight-detail-info h3 {
+            color: #2b6cb0;
+            margin-bottom: 20px;
+        }
+        
+        .detail-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .detail-section h4 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .detail-label {
+            font-size: 14px;
+            color: #718096;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            font-size: 14px;
+            color: #2d3748;
+            font-weight: 600;
+        }
+        
+        .detail-value.status-normal {
+            color: #38a169;
+        }
+        
+        .detail-value.status-delayed {
+            color: #dd6b20;
+        }
+        
+        .detail-value.status-cancelled {
+            color: #e53e3e;
+        }
+        
+        .detail-actions {
+            margin-top: 20px;
+            text-align: right;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 40px 0;
+            color: #718096;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-header h1 {
+                font-size: 24px;
+            }
+            
+            .flight-search-section {
+                padding: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .flight-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+                        <nav class="unified-navbar">
+            <div class="unified-navbar-left">
+                <a href="/" class="unified-home-btn">返回主页</a>
+                <div class="unified-navbar-menu">
+                   
+                    <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+                    <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+                    <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+                    <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a></div>
+            </div>
+            
+            <div class="unified-navbar-right">
+                <div class="unified-user-info" id="userInfo">
+                    <div class="unified-user-avatar" id="user-avatar">U</div>
+                    <div class="unified-user-details">
+                        <div class="unified-user-name" id="user-name">未登录</div>
+                        <div class="unified-user-role" id="user-role">访客</div>
+                    </div>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/profile">查看个人信息</a>
+                    <a href="/system-settings">系统设置</a>
+                    <a href="/system-monitor">系统监控</a>
+                    <a href="/report-generation">报表生成</a>
+                    <a href="/permission-management">权限管理</a>
+            <a href="/login" class="logout">退出登录</a>
+                </div>
+            </div>
+        </nav>
+        <script src="/static/unified-header.js"></script>
+
+        
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>航班查询</h1>
+            <p>实时查询航班信息，为检修工作提供准确的时间参考</p>
+        </div>
+        
+        <!-- 航班查询区域 -->
+        <div class="flight-search-section">
+            <div class="aviation-warning">
+                <h4>⚠️ 航空安全提醒</h4>
+                <p>请确保在航班到达前完成所有检修准备工作，严格遵守安全操作规程。</p>
+            </div>
+            
+            <div class="flight-search-form">
+                <h2>查询条件</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="flight-number">航班号</label>
+                        <input type="text" id="flight-number" placeholder="例如：CA1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="departure-airport">出发机场</label>
+                        <input type="text" id="departure-airport" placeholder="例如：PEK">
+                    </div>
+                    <div class="form-group">
+                        <label for="arrival-airport">到达机场</label>
+                        <input type="text" id="arrival-airport" placeholder="例如：SHA">
+                    </div>
+                    <div class="form-group">
+                        <label for="flight-date">航班日期</label>
+                        <input type="date" id="flight-date">
+                    </div>
+                </div>
+                <button class="btn" id="search-flight-btn">查询航班</button>
+            </div>
+            
+            <div class="search-results">
+                <div class="results-header">
+                    <h2>查询结果</h2>
+                    <div class="header-actions">
+                        <button class="btn secondary" id="view-map-btn">查看航班地图</button>
+                        <button class="btn primary" id="create-flight-btn">创建航班</button>
+                    </div>
+                </div>
+                <div class="results-container" id="results-container">
+                    <!-- 搜索结果将显示在这里 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 航班模态框 -->
+    <div id="flight-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">创建航班</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="flight-form">
+                <input type="hidden" id="flight-id">
+                <div class="form-grid">
+                    <div class="form-group autocomplete-wrapper">
+                        <label for="modal-airline">航空公司</label>
+                        <input type="text" id="modal-airline" required autocomplete="off" placeholder="输入航司名称、IATA或ICAO">
+                        <div id="modal-airline-list" class="autocomplete-items"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-flight-number">航班号</label>
+                        <input type="text" id="modal-flight-number" required placeholder="例如：1234 (无需输入IATA代码)">
+                        <div style="font-size: 12px; color: #666; margin-top: 4px;">完整航班号: <span id="full-flight-number-preview" style="font-weight: bold; color: #2b6cb0;">--</span></div>
+                    </div>
+                    <div class="form-group autocomplete-wrapper">
+                        <label for="modal-departure-airport">出发机场</label>
+                        <input type="text" id="modal-departure-airport" required autocomplete="off" placeholder="输入城市、机场名或三字码">
+                        <div id="modal-departure-airport-list" class="autocomplete-items"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-departure-city">出发城市</label>
+                        <input type="text" id="modal-departure-city" required readonly style="background-color: #f0f0f0;">
+                    </div>
+                    <div class="form-group autocomplete-wrapper">
+                        <label for="modal-arrival-airport">到达机场</label>
+                        <input type="text" id="modal-arrival-airport" required autocomplete="off" placeholder="输入城市、机场名或三字码">
+                        <div id="modal-arrival-airport-list" class="autocomplete-items"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-arrival-city">到达城市</label>
+                        <input type="text" id="modal-arrival-city" required readonly style="background-color: #f0f0f0;">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-departure-time">出发时间</label>
+                        <input type="time" id="modal-departure-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-arrival-time">到达时间</label>
+                        <input type="time" id="modal-arrival-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-flight-date">航班日期</label>
+                        <input type="date" id="modal-flight-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-aircraft-type">飞机型号</label>
+                        <input type="text" id="modal-aircraft-type" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-aircraft-registration">飞机注册号</label>
+                        <input type="text" id="modal-aircraft-registration" required placeholder="例如：B-1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-status">航班状态</label>
+                        <select id="modal-status" required>
+                            <option value="正常">正常</option>
+                            <option value="延误">延误</option>
+                            <option value="取消">取消</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" id="cancel-flight-btn">取消</button>
+                    <button type="submit" class="btn primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 检修记录模态框 -->
+    <div id="inspection-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>飞机检修记录</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="inspection-records">
+                <!-- 检修记录将在此动态添加 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 航班详情模态框 -->
+    <div id="flight-details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>航班详情</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="flight-details">
+                <!-- 航班详情将在此动态添加 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 航班地图模态框 -->
+    <div id="flight-map-modal" class="modal">
+        <div class="modal-content" style="max-width: 1200px;">
+            <div class="modal-header">
+                <h2>航班地图</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <div class="legend-line normal"></div>
+                    <span>准时</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line delayed"></div>
+                    <span>延误</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line cancelled"></div>
+                    <span>取消</span>
+                </div>
+                <div class="legend-item" style="margin-left: auto;">
+                    <label for="map-date-filter" style="margin-right: 10px;">日期筛选:</label>
+                    <input type="date" id="map-date-filter" style="padding: 8px; border: 2px solid #e2e8f0; border-radius: 4px;">
+                    <button id="apply-date-filter" class="btn small primary" style="margin-left: 10px;">确认</button>
+                    <button id="clear-date-filter" class="btn small secondary" style="margin-left: 10px;">清除</button>
+                </div>
+            </div>
+            <div id="flight-map" style="width: 100%; height: 600px;"></div>
+        </div>
+    </div>
+    
+    <!-- 维修记录详情模态框 -->
+    <div id="record-detail-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2>维修记录详情</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="record-detail-content">
+                <!-- 维修记录详情将在此动态添加 -->
+            </div>
+        </div>
+    </div>
+</body>
+    
+    <script>
+        // 登录检查
+        function checkLogin() {
+            const currentUser = localStorage.getItem('currentUser');
+            const currentUserRole = localStorage.getItem('currentUserRole');
+            
+            if (!currentUser) {
+                // 未登录，重定向到登录页面
+                window.location.href = '/login';
+            } else {
+                // 更新用户信息
+                document.getElementById('user-name').textContent = currentUser;
+                document.getElementById('user-avatar').textContent = currentUser.charAt(0).toUpperCase();
+                
+                // 更新用户角色显示
+                const userRoleElement = document.querySelector('.user-role');
+                if (userRoleElement) {
+                    let roleText = '技术人员';
+                    if (currentUserRole === 'manager') {
+                        roleText = '管理人员';
+                    } else if (currentUserRole === 'admin') {
+                        roleText = '总负责人';
+                    }
+                    userRoleElement.textContent = roleText;
+                }
+            }
+        }
+        
+        // 页面加载时检查登录状态
+        window.addEventListener('load', checkLogin);
+        
+        // 航班查询功能
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded事件触发');
+            
+            const searchBtn = document.getElementById('search-flight-btn');
+            if (searchBtn) {
+                searchBtn.addEventListener('click', async function() {
+                    const flightNumber = document.getElementById('flight-number').value;
+                    const departureAirport = document.getElementById('departure-airport').value;
+                    const arrivalAirport = document.getElementById('arrival-airport').value;
+                    const flightDate = document.getElementById('flight-date').value;
+                    
+                    // 验证表单
+                    if (!flightNumber && !departureAirport && !arrivalAirport) {
+                        alert('请至少输入一个查询条件');
+                        return;
+                    }
+                    
+                    // 显示加载状态
+                    const resultsContainer = document.getElementById('results-container');
+                    resultsContainer.innerHTML = '<div style="text-align: center; padding: 40px 0;"><div class="loading"></div><p style="margin-top: 15px;">查询中...</p></div>';
+                    
+                    // 禁用查询按钮
+                    searchBtn.disabled = true;
+                    searchBtn.style.opacity = '0.7';
+                    searchBtn.textContent = '查询中...';
+                    
+                    try {
+                        // 发送请求到后端API
+                        const response = await fetch('/api/flight/search', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                flight_number: flightNumber,
+                                departure_airport: departureAirport,
+                                arrival_airport: arrivalAirport,
+                                flight_date: flightDate
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            displayFlightResults(data.flights);
+                        } else {
+                            resultsContainer.innerHTML = `<p class="no-results">${data.message || '未找到航班信息'}</p>`;
+                        }
+                    } catch (error) {
+                        console.error('查询航班失败:', error);
+                        resultsContainer.innerHTML = '<p class="no-results">查询失败，请稍后重试</p>';
+                    } finally {
+                        // 恢复查询按钮状态
+                        searchBtn.disabled = false;
+                        searchBtn.style.opacity = '1';
+                        searchBtn.textContent = '查询航班';
+                    }
+                });
+            }
+            
+            // 加载所有航班
+            console.log('调用loadAllFlights()');
+            loadAllFlights();
+
+            // 为航班号输入框添加预览逻辑
+            const airlineInput = document.getElementById('modal-airline');
+            const flightNumInput = document.getElementById('modal-flight-number');
+            const previewSpan = document.getElementById('full-flight-number-preview');
+            const flightNumList = document.getElementById('modal-flight-number-list');
+
+            if (airlineInput && flightNumInput && previewSpan) {
+                // 当航班号输入变化时更新预览
+                flightNumInput.addEventListener('input', updateFullFlightNumberPreview);
+                
+                // 当航司输入变化（可能包含了IATA代码）也更新预览
+                airlineInput.addEventListener('input', function() {
+                    updateFullFlightNumberPreview();
+                });
+            }
+
+            function updateFullFlightNumberPreview() {
+                const iata = airlineInput.dataset.iata || '';
+                const num = flightNumInput.value.trim();
+                if (iata && num) {
+                    previewSpan.textContent = iata + num;
+                } else if (num) {
+                    previewSpan.textContent = (iata || '??') + num;
+                } else {
+                    previewSpan.textContent = '--';
+                }
+            }
+
+            // 查看航班地图按钮点击事件
+            const viewMapBtn = document.getElementById('view-map-btn');
+            if (viewMapBtn) {
+                viewMapBtn.addEventListener('click', function() {
+                    showFlightMap();
+                });
+            }
+            
+            // 创建航班按钮点击事件
+            const createFlightBtn = document.getElementById('create-flight-btn');
+            console.log('创建航班按钮:', createFlightBtn);
+            if (createFlightBtn) {
+                createFlightBtn.addEventListener('click', function() {
+                    console.log('点击创建航班按钮');
+                    openFlightModal();
+                });
+            }
+            
+            // 关闭模态框
+            const closeBtn = document.querySelector('.close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    closeFlightModal();
+                });
+            }
+            
+            // 关闭航班地图模态框
+            const mapCloseBtn = document.querySelector('#flight-map-modal .close');
+            if (mapCloseBtn) {
+                mapCloseBtn.addEventListener('click', function() {
+                    closeFlightMapModal();
+                });
+            }
+            
+            // 取消按钮点击事件
+            const cancelBtn = document.getElementById('cancel-flight-btn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    closeFlightModal();
+                });
+            }
+            
+            // 航班表单提交事件
+            const flightForm = document.getElementById('flight-form');
+            if (flightForm) {
+                flightForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveFlight();
+                });
+            }
+            
+            // 关闭航班详情模态框
+            const detailsCloseBtn = document.querySelector('#flight-details-modal .close');
+            if (detailsCloseBtn) {
+                detailsCloseBtn.addEventListener('click', function() {
+                    closeFlightDetailsModal();
+                });
+            }
+            
+            // 关闭检修记录模态框
+            const inspectionCloseBtn = document.querySelector('#inspection-modal .close');
+            if (inspectionCloseBtn) {
+                inspectionCloseBtn.addEventListener('click', function() {
+                    closeInspectionModal();
+                });
+            }
+            
+            // 关闭维修记录详情模态框
+            const recordDetailCloseBtn = document.querySelector('#record-detail-modal .close');
+            if (recordDetailCloseBtn) {
+                recordDetailCloseBtn.addEventListener('click', function() {
+                    closeRecordDetailModal();
+                });
+            }
+        });
+        
+        // 加载所有航班
+        async function loadAllFlights() {
+            console.log('开始加载所有航班');
+            try {
+                const response = await fetch('/api/flights');
+                console.log('获取航班响应:', response);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('获取航班数据:', data);
+                    if (data && data.success) {
+                        displayFlightResults(data.flights);
+                        return;
+                    }
+                }
+                // 如果服务器返回非200或格式不对，回退到本地存储的数据
+                console.warn('服务器航班数据不可用，回退到本地存储');
+            } catch (error) {
+                console.warn('加载航班失败，回退到本地存储:', error);
+            }
+
+            // 回退：从 localStorage 读取已保存的航班
+            try {
+                const stored = JSON.parse(localStorage.getItem('storedFlights') || '{}');
+                const flights = Object.keys(stored).map(id => {
+                    return Object.assign({ id: id }, stored[id]);
+                });
+                displayFlightResults(flights);
+            } catch (e) {
+                console.error('从本地读取航班失败:', e);
+                const resultsContainer = document.getElementById('results-container');
+                resultsContainer.innerHTML = '<p class="no-results">无法加载航班信息</p>';
+            }
+        }
+        
+        // 显示航班查询结果
+        function displayFlightResults(flights) {
+            const resultsContainer = document.getElementById('results-container');
+            
+            if (!flights || flights.length === 0) {
+                resultsContainer.innerHTML = '<p class="no-results">未找到匹配的航班信息</p>';
+                return;
+            }
+            
+            let html = `
+                <table class="flight-list">
+                    <thead>
+                        <tr>
+                            <th>航班信息</th>
+                            <th>出发机场</th>
+                            <th>到达机场</th>
+                            <th>出发时间</th>
+                            <th>到达时间</th>
+                            <th>日期</th>
+                            <th>飞机型号</th>
+                            <th>飞机注册号</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            flights.forEach(flight => {
+                html += `
+                    <tr>
+                        <td>
+                            <div class="flight-number">${flight.flight_number}</div>
+                            <div class="airline">${flight.airline || '未知航空公司'}</div>
+                        </td>
+                        <td>${flight.departure_airport} (${flight.departure_city || ''})</td>
+                        <td>${flight.arrival_airport} (${flight.arrival_city || ''})</td>
+                        <td>${flight.departure_time || '未知'}</td>
+                        <td>${flight.arrival_time || '未知'}</td>
+                        <td>${flight.flight_date || '未知'}</td>
+                        <td>${flight.aircraft_type || '未知'}</td>
+                        <td>${flight.aircraft_registration || '未知'}</td>
+                        <td>
+                            <span class="flight-status ${getStatusClass(flight.status)}">
+                                ${getStatusText(flight.status)}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flight-actions">
+                                <button class="btn primary small" onclick="viewFlightDetails('${flight.id}')">查看详情</button>
+                                <button class="btn secondary small" onclick="editFlight('${flight.id}')">编辑</button>
+                                <button class="btn danger small" onclick="deleteFlight('${flight.id}')">删除</button>
+                                ${flight.aircraft_registration ? `<button class="btn secondary small" onclick="viewAircraftInspectionRecords('${flight.aircraft_registration}')">查看检修记录</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            resultsContainer.innerHTML = html;
+        }
+        
+        // 获取状态样式类
+        function getStatusClass(status) {
+            switch (status) {
+                case 'on-time':
+                case '正常':
+                    return 'on-time';
+                case 'delayed':
+                case '延误':
+                    return 'delayed';
+                case 'cancelled':
+                case '取消':
+                    return 'cancelled';
+                default:
+                    return 'on-time';
+            }
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            switch (status) {
+                case 'on-time':
+                    return '准点';
+                case 'delayed':
+                    return '延误';
+                case 'cancelled':
+                    return '取消';
+                default:
+                    return status || '未知';
+            }
+        }
+        
+        // 打开航班模态框
+        function openFlightModal() {
+            console.log('开始打开航班模态框');
+            try {
+                const modalTitle = document.getElementById('modal-title');
+                const flightId = document.getElementById('flight-id');
+                const modalFlightNumber = document.getElementById('modal-flight-number');
+                const modalAirline = document.getElementById('modal-airline');
+                const modalDepartureAirport = document.getElementById('modal-departure-airport');
+                const modalDepartureCity = document.getElementById('modal-departure-city');
+                const modalArrivalAirport = document.getElementById('modal-arrival-airport');
+                const modalArrivalCity = document.getElementById('modal-arrival-city');
+                const modalDepartureTime = document.getElementById('modal-departure-time');
+                const modalArrivalTime = document.getElementById('modal-arrival-time');
+                const modalFlightDate = document.getElementById('modal-flight-date');
+                const modalAircraftType = document.getElementById('modal-aircraft-type');
+                const modalStatus = document.getElementById('modal-status');
+                const flightModal = document.getElementById('flight-modal');
+                
+                console.log('模态框元素:', {
+                    modalTitle: !!modalTitle,
+                    flightId: !!flightId,
+                    modalFlightNumber: !!modalFlightNumber,
+                    modalAirline: !!modalAirline,
+                    modalDepartureAirport: !!modalDepartureAirport,
+                    modalDepartureCity: !!modalDepartureCity,
+                    modalArrivalAirport: !!modalArrivalAirport,
+                    modalArrivalCity: !!modalArrivalCity,
+                    modalDepartureTime: !!modalDepartureTime,
+                    modalArrivalTime: !!modalArrivalTime,
+                    modalFlightDate: !!modalFlightDate,
+                    modalAircraftType: !!modalAircraftType,
+                    modalStatus: !!modalStatus,
+                    flightModal: !!flightModal
+                });
+                
+                if (modalTitle) modalTitle.textContent = '创建航班';
+                if (flightId) flightId.value = '';
+                if (modalFlightNumber) modalFlightNumber.value = '';
+                if (modalAirline) modalAirline.value = '';
+                if (modalDepartureAirport) modalDepartureAirport.value = '';
+                if (modalDepartureCity) modalDepartureCity.value = '';
+                if (modalArrivalAirport) modalArrivalAirport.value = '';
+                if (modalArrivalCity) modalArrivalCity.value = '';
+                if (modalDepartureTime) modalDepartureTime.value = '';
+                if (modalArrivalTime) modalArrivalTime.value = '';
+                if (modalFlightDate) modalFlightDate.value = '';
+                if (modalAircraftType) modalAircraftType.value = '';
+                if (modalStatus) modalStatus.value = '正常';
+                if (flightModal) {
+                    console.log('显示模态框');
+                    flightModal.classList.add('active');
+                } else {
+                    console.error('模态框元素不存在');
+                    alert('模态框元素不存在，请检查页面结构');
+                }
+            } catch (error) {
+                console.error('打开模态框失败:', error);
+                alert('打开模态框失败: ' + error.message);
+            }
+        }
+        
+        // 关闭航班模态框
+        function closeFlightModal() {
+            console.log('开始关闭航班模态框');
+            try {
+                const flightModal = document.getElementById('flight-modal');
+                if (flightModal) {
+                    flightModal.classList.remove('active');
+                    console.log('模态框已关闭');
+                } else {
+                    console.error('模态框元素不存在');
+                }
+            } catch (error) {
+                console.error('关闭模态框失败:', error);
+            }
+        }
+        
+        // 编辑航班
+        async function editFlight(id) {
+            try {
+                const response = await fetch(`/api/flights/${id}`);
+                const data = await response.json();
+                if (data.success) {
+                    const flight = data.flight;
+                    document.getElementById('modal-title').textContent = '编辑航班';
+                    document.getElementById('flight-id').value = flight.id;
+                    document.getElementById('modal-flight-number').value = flight.flight_number;
+                    document.getElementById('modal-airline').value = flight.airline;
+                    document.getElementById('modal-departure-airport').value = flight.departure_airport;
+                    document.getElementById('modal-departure-city').value = flight.departure_city;
+                    document.getElementById('modal-arrival-airport').value = flight.arrival_airport;
+                    document.getElementById('modal-arrival-city').value = flight.arrival_city;
+                    document.getElementById('modal-departure-time').value = flight.departure_time;
+                    document.getElementById('modal-arrival-time').value = flight.arrival_time;
+                    document.getElementById('modal-flight-date').value = flight.flight_date;
+                    document.getElementById('modal-aircraft-type').value = flight.aircraft_type;
+                    document.getElementById('modal-aircraft-registration').value = flight.aircraft_registration || '';
+                    document.getElementById('modal-status').value = flight.status;
+                    document.getElementById('flight-modal').classList.add('active');
+                }
+            } catch (error) {
+                console.error('获取航班信息失败:', error);
+                alert('获取航班信息失败，请稍后重试');
+            }
+        }
+        
+        // 删除航班
+        async function deleteFlight(id) {
+            if (confirm('确定要删除这个航班吗？')) {
+                try {
+                    const response = await fetch(`/api/flights/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('航班删除成功');
+                        loadAllFlights();
+                    } else {
+                        alert('航班删除失败: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('删除航班失败:', error);
+                    alert('删除航班失败，请稍后重试');
+                }
+            }
+        }
+        
+        // 保存航班（带后端失败回退到本地的保护）
+        async function saveFlight() {
+            const id = document.getElementById('flight-id').value;
+
+            // 使用本地 AIRPORT_DATA 做校验（如果存在）
+            const depInput = document.getElementById('modal-departure-airport');
+            const arrInput = document.getElementById('modal-arrival-airport');
+            const airportData = window.AIRPORT_DATA || [];
+
+            if (airportData && airportData.length > 0) {
+                const depVal = depInput.value.trim();
+                const arrVal = arrInput.value.trim();
+                const isDepValid = airportData.some(a => a.name === depVal || a.code === depVal || a.city === depVal);
+                const isArrValid = airportData.some(a => a.name === arrVal || a.code === arrVal || a.city === arrVal);
+                if (!isDepValid) {
+                    alert('出发机场输入无效，请从列表中选择或输入正确的机场名称/代码');
+                    depInput.focus();
+                    return;
+                }
+                if (!isArrValid) {
+                    alert('到达机场输入无效，请从列表中选择或输入正确的机场名称/代码');
+                    arrInput.focus();
+                    return;
+                }
+            }
+
+            const airlineInput = document.getElementById('modal-airline');
+            const flightNumInput = document.getElementById('modal-flight-number');
+            let fullFlightNumber = flightNumInput.value.trim();
+            const iata = (airlineInput && airlineInput.dataset && airlineInput.dataset.iata) ? airlineInput.dataset.iata : '';
+            if (iata && !fullFlightNumber.toUpperCase().startsWith(iata.toUpperCase())) {
+                fullFlightNumber = iata + fullFlightNumber;
+            }
+
+            const flightData = {
+                flight_number: fullFlightNumber,
+                airline: airlineInput ? airlineInput.value : '',
+                departure_airport: depInput.value,
+                departure_city: document.getElementById('modal-departure-city').value,
+                arrival_airport: arrInput.value,
+                arrival_city: document.getElementById('modal-arrival-city').value,
+                departure_time: document.getElementById('modal-departure-time').value,
+                arrival_time: document.getElementById('modal-arrival-time').value,
+                flight_date: document.getElementById('modal-flight-date').value,
+                aircraft_type: document.getElementById('modal-aircraft-type').value,
+                aircraft_registration: document.getElementById('modal-aircraft-registration').value,
+                status: document.getElementById('modal-status').value
+            };
+
+            // 首先尝试向后端提交
+            try {
+                let res;
+                if (id) {
+                    res = await fetch(`/api/flights/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(flightData)
+                    });
+                } else {
+                    res = await fetch('/api/flights', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(flightData)
+                    });
+                }
+
+                // 若后端正常响应且返回success，则认为保存成功
+                if (res && res.ok) {
+                    const data = await res.json();
+                    console.log('保存航班响应:', data);
+                    if (data && data.success) {
+                        const storedFlights = JSON.parse(localStorage.getItem('storedFlights') || '{}');
+                        const flightId = id || data.flight && data.flight.id ? data.flight.id : (Date.now().toString());
+                        storedFlights[flightId] = flightData;
+                        localStorage.setItem('storedFlights', JSON.stringify(storedFlights));
+                        alert(id ? '航班更新成功' : '航班创建成功');
+                        closeFlightModal();
+                        loadAllFlights();
+                        return;
+                    }
+                    // 如果后端返回失败，抛出以走回退逻辑
+                    throw new Error((data && data.message) ? data.message : '后端保存失败');
+                } else {
+                    throw new Error('后端未响应或返回错误状态');
+                }
+            } catch (err) {
+                console.warn('后端保存失败，使用本地保存作为回退：', err);
+                // 回退：保存在 localStorage 中
+                try {
+                    const storedFlights = JSON.parse(localStorage.getItem('storedFlights') || '{}');
+                    const generatedId = id || ('local-' + Date.now());
+                    storedFlights[generatedId] = flightData;
+                    localStorage.setItem('storedFlights', JSON.stringify(storedFlights));
+                    alert('当前无法连接后端，航班已保存到本地（离线）。');
+                    closeFlightModal();
+                    loadAllFlights();
+                    return;
+                } catch (e) {
+                    console.error('本地保存也失败:', e);
+                    alert('保存失败，请稍后重试');
+                }
+            }
+        }
+        
+        // 查看飞机检修记录
+        async function viewAircraftInspectionRecords(registration) {
+            try {
+                // 显示加载状态
+                const modalContent = document.querySelector('#inspection-modal .modal-content');
+                if (modalContent) {
+                    modalContent.innerHTML = '<div style="text-align: center; padding: 40px 0;"><div class="loading"></div><p style="margin-top: 15px;">加载检修记录中...</p></div>';
+                }
+                
+                // 打开模态框
+                const inspectionModal = document.getElementById('inspection-modal');
+                if (inspectionModal) {
+                    inspectionModal.classList.add('active');
+                }
+                
+                // 发送请求到后端API获取检修记录
+                const response = await fetch(`/api/aircraft-inspection/${registration}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayInspectionRecords(data.records, registration);
+                } else {
+                    displayNoInspectionRecords(registration);
+                }
+            } catch (error) {
+                console.error('获取检修记录失败:', error);
+                displayNoInspectionRecords(registration);
+            }
+        }
+        
+        // 显示检修记录
+        function displayInspectionRecords(records, registration) {
+            const modalContent = document.querySelector('#inspection-modal .modal-content');
+            if (!modalContent) return;
+            
+            let html = `
+                <div class="modal-header">
+                    <h2>飞机检修记录 - ${registration}</h2>
+                    <span class="close" onclick="closeInspectionModal()">&times;</span>
+                </div>
+                <div class="inspection-records">
+            `;
+            
+            if (records && records.length > 0) {
+                html += `
+                    <h3>检修记录列表</h3>
+                    <div class="inspection-list">
+                `;
+                
+                records.forEach(record => {
+                    html += `
+                        <div class="inspection-item">
+                            <div class="inspection-date">${record.date || '未知日期'}</div>
+                            <div class="inspection-details">
+                                <h4>${record.title || '未知检修项目'}</h4>
+                                <p>${record.description || '无详细描述'}</p>
+                                <div class="inspection-status">
+                                    <span class="status-label">状态:</span>
+                                    <span class="status-value ${record.status === '完成' ? 'completed' : 'pending'}">${record.status || '未知'}</span>
+                                </div>
+                                <button class="view-details-btn" onclick="viewRecordDetails('${record.id}')">查看详情</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="no-records">
+                        <p>暂无该飞机的检修记录</p>
+                    </div>
+                `;
+            }
+            
+            html += `
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+        }
+        
+        // 显示无检修记录
+        function displayNoInspectionRecords(registration) {
+            const modalContent = document.querySelector('#inspection-modal .modal-content');
+            if (!modalContent) return;
+            
+            const html = `
+                <div class="modal-header">
+                    <h2>飞机检修记录 - ${registration}</h2>
+                    <span class="close" onclick="closeInspectionModal()">&times;</span>
+                </div>
+                <div class="inspection-records">
+                    <div class="no-records">
+                        <p>暂无该飞机的检修记录</p>
+                        <p style="color: #718096; font-size: 14px; margin-top: 10px;">您可以在检修管理系统中为该飞机创建检修记录。</p>
+                    </div>
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+        }
+        
+        // 关闭检修记录模态框
+        function closeInspectionModal() {
+            const inspectionModal = document.getElementById('inspection-modal');
+            if (inspectionModal) {
+                inspectionModal.classList.remove('active');
+            }
+        }
+        
+        // 查看检修记录详情
+        async function viewRecordDetails(recordId) {
+            try {
+                // 显示加载状态
+                const modalContent = document.querySelector('#record-detail-modal .record-detail-content');
+                if (modalContent) {
+                    modalContent.innerHTML = '<div style="text-align: center; padding: 40px 0;"><div class="loading"></div><p style="margin-top: 15px;">加载记录详情中...</p></div>';
+                }
+                
+                // 打开模态框
+                const detailModal = document.getElementById('record-detail-modal');
+                if (detailModal) {
+                    detailModal.classList.add('active');
+                }
+                
+                // 发送请求获取记录详情
+                const response = await fetch(`/api/blockchain/records/view/${recordId}`);
+                const data = await response.json();
+                
+                if (data.record) {
+                    displayRecordDetails(data.record);
+                } else {
+                    modalContent.innerHTML = '<div style="text-align: center; padding: 40px 0; color: #e53e3e;">加载记录详情失败</div>';
+                }
+            } catch (error) {
+                console.error('查看记录详情失败:', error);
+                const modalContent = document.querySelector('#record-detail-modal .record-detail-content');
+                if (modalContent) {
+                    modalContent.innerHTML = '<div style="text-align: center; padding: 40px 0; color: #e53e3e;">加载记录详情失败</div>';
+                }
+            }
+        }
+        
+        // 显示记录详情
+        function displayRecordDetails(record) {
+            const modalContent = document.querySelector('#record-detail-modal .record-detail-content');
+            if (!modalContent) return;
+            
+            const statusClass = {
+                '待审批': 'pending',
+                '已批准': 'approved',
+                '已放行': 'released'
+            }[record.status] || 'pending';
+            
+            // 格式化时间戳
+            function formatTimestamp(timestamp) {
+                if (!timestamp || timestamp === '未上链' || timestamp === '未知') return '未知';
+                const date = new Date(parseInt(timestamp) * 1000);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+            
+            const html = `
+                <!-- 基本信息 -->
+                <div class="record-detail-section">
+                    <h3>基本信息</h3>
+                    <div class="record-detail-grid">
+                        <div class="record-detail-item">
+                            <label>记录ID</label>
+                            <div class="value">${record.id || '未知'}</div>
+                        </div>
+                        <div class="record-detail-item">
+                            <label>飞机注册号</label>
+                            <div class="value">${record.aircraft_registration || '未知'}</div>
+                        </div>
+                        <div class="record-detail-item">
+                            <label>检修项目</label>
+                            <div class="value">${record.title || record.maintenance_type || '未知'}</div>
+                        </div>
+                        <div class="record-detail-item">
+                            <label>检修日期</label>
+                            <div class="value">${formatTimestamp(record.date || record.created_at)}</div>
+                        </div>
+                        <div class="record-detail-item">
+                            <label>检修人员</label>
+                            <div class="value">${record.technician_name || '未知'}</div>
+                        </div>
+                        <div class="record-detail-item">
+                            <label>当前状态</label>
+                            <div class="value"><span class="status-badge ${statusClass}">${record.status || '未知'}</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 检修内容 -->
+                <div class="record-detail-section">
+                    <h3>检修内容</h3>
+                    <div class="record-detail-grid">
+                        <div class="record-detail-item full-width">
+                            <label>检修描述</label>
+                            <div class="value full">${record.description || '无详细描述'}</div>
+                        </div>
+                        <div class="record-detail-item">
+                            <label>检修部位</label>
+                            <div class="value">${record.maintenance_part || '未指定'}</div>
+                        </div>
+                        <div class="record-detail-item">
+                            <label>检修方法</label>
+                            <div class="value">${record.maintenance_method || '未指定'}</div>
+                        </div>
+                        <div class="record-detail-item full-width">
+                            <label>使用材料</label>
+                            <div class="value">${record.materials_used || '未指定'}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 签名信息 -->
+                <div class="record-detail-section">
+                    <h3>签名信息</h3>
+                    <div class="signature-info">
+                        <div class="signature-item">
+                            <span class="label">创建者</span>
+                            <span class="value">${record.technician_name || '未知'}</span>
+                        </div>
+                        <div class="signature-item">
+                            <span class="label">创建时间</span>
+                            <span class="value">${formatTimestamp(record.created_at)}</span>
+                        </div>
+                        ${record.approver ? `
+                        <div class="signature-item">
+                            <span class="label">审批人员</span>
+                            <span class="value">${record.approver || '未知'}</span>
+                        </div>
+                        <div class="signature-item">
+                            <span class="label">审批时间</span>
+                            <span class="value">${formatTimestamp(record.approval_time)}</span>
+                        </div>
+                        ` : ''}
+                        ${record.releaser ? `
+                        <div class="signature-item">
+                            <span class="label">放行人员</span>
+                            <span class="value">${record.releaser || '未知'}</span>
+                        </div>
+                        <div class="signature-item">
+                            <span class="label">放行时间</span>
+                            <span class="value">${formatTimestamp(record.release_time)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- 区块链信息 -->
+                <div class="record-detail-section">
+                    <h3>区块链信息</h3>
+                    <div class="blockchain-info">
+                        <div class="record-detail-grid">
+                            <div class="record-detail-item">
+                                <label>交易哈希</label>
+                                <div class="value hash">${record.transaction_hash || '未上链'}</div>
+                            </div>
+                            <div class="record-detail-item">
+                                <label>区块高度</label>
+                                <div class="value">${record.block_number || '未上链'}</div>
+                            </div>
+                            <div class="record-detail-item full-width">
+                                <label>上链时间</label>
+                                <div class="value">${formatTimestamp(record.blockchain_timestamp)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+        }
+        
+        // 关闭记录详情模态框
+        function closeRecordDetailModal() {
+            const detailModal = document.getElementById('record-detail-modal');
+            if (detailModal) {
+                detailModal.classList.remove('active');
+            }
+        }
+        
+        // 查看航班详情
+        async function viewFlightDetails(id) {
+            try {
+                // 显示加载状态
+                const modalContent = document.querySelector('#flight-details-modal .flight-details');
+                if (modalContent) {
+                    modalContent.innerHTML = '<div style="text-align: center; padding: 40px 0;"><div class="loading"></div><p style="margin-top: 15px;">加载航班详情中...</p></div>';
+                }
+                
+                // 打开模态框
+                const detailsModal = document.getElementById('flight-details-modal');
+                if (detailsModal) {
+                    detailsModal.classList.add('active');
+                }
+                
+                // 发送请求到后端API获取航班详情
+                const response = await fetch(`/api/flights/${id}`);
+                const data = await response.json();
+                
+                // 调试信息
+                console.log('获取航班详情响应:', data);
+                
+                if (data.success) {
+                    displayFlightDetails(data.flight);
+                } else {
+                    displayErrorFlightDetails('获取航班详情失败');
+                }
+            } catch (error) {
+                console.error('获取航班详情失败:', error);
+                displayErrorFlightDetails('获取航班详情失败，请稍后重试');
+            }
+        }
+        
+        // 显示航班详情
+        function displayFlightDetails(flight) {
+            const modalContent = document.querySelector('#flight-details-modal .flight-details');
+            if (!modalContent) return;
+            
+            // 从本地存储获取飞机注册号
+            let aircraftRegistration = flight.aircraft_registration;
+            const storedFlights = JSON.parse(localStorage.getItem('storedFlights') || '{}');
+            if (storedFlights[flight.id] && storedFlights[flight.id].aircraft_registration) {
+                aircraftRegistration = storedFlights[flight.id].aircraft_registration;
+            }
+            
+            const html = `
+                <div class="flight-detail-info">
+                    <h3>${flight.flight_number} - ${flight.airline || '未知航空公司'}</h3>
+                    
+                    <div class="detail-section">
+                        <h4>航班信息</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">出发机场:</span>
+                                <span class="detail-value">${flight.departure_airport} (${flight.departure_city || ''})</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">到达机场:</span>
+                                <span class="detail-value">${flight.arrival_airport} (${flight.arrival_city || ''})</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">出发时间:</span>
+                                <span class="detail-value">${flight.departure_time || '未知'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">到达时间:</span>
+                                <span class="detail-value">${flight.arrival_time || '未知'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">航班日期:</span>
+                                <span class="detail-value">${flight.flight_date || '未知'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">航班状态:</span>
+                                <span class="detail-value status-${getStatusClass(flight.status)}">${getStatusText(flight.status)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>飞机信息</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">飞机型号:</span>
+                                <span class="detail-value">${flight.aircraft_type || '未知'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">飞机注册号:</span>
+                                <span class="detail-value">${aircraftRegistration || '未知'}</span>
+                            </div>
+                            ${aircraftRegistration ? `
+                                <div class="detail-item" style="grid-column: 1 / -1;">
+                                    <span class="detail-label">维修信息:</span>
+                                    <span class="detail-value">
+                                        <button class="btn primary" onclick="viewAircraftInspectionRecords('${aircraftRegistration}')">查看维修记录</button>
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+        }
+        
+        // 显示错误信息
+        function displayErrorFlightDetails(message) {
+            const modalContent = document.querySelector('#flight-details-modal .flight-details');
+            if (!modalContent) return;
+            
+            const html = `
+                <div class="error-message">
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+        }
+        
+        // 关闭航班详情模态框
+        function closeFlightDetailsModal() {
+            const detailsModal = document.getElementById('flight-details-modal');
+            if (detailsModal) {
+                detailsModal.classList.remove('active');
+            }
+        }
+        
+        // 城市坐标数据
+        const cityCoordinates = {
+            '北京': [116.4074, 39.9042],
+            '上海': [121.4737, 31.2304],
+            '广州': [113.2644, 23.1291],
+            '深圳': [114.0579, 22.5431],
+            '成都': [104.0665, 30.5723],
+            '重庆': [106.5516, 29.5630],
+            '杭州': [120.1551, 30.2741],
+            '南京': [118.7969, 32.0603],
+            '武汉': [114.3054, 30.5931],
+            '西安': [108.9398, 34.3416],
+            '天津': [117.2009, 39.0842],
+            '青岛': [120.3826, 36.0671],
+            '大连': [121.6186, 38.9140],
+            '沈阳': [123.4315, 41.8057],
+            '哈尔滨': [126.5350, 45.8038],
+            '长沙': [112.9388, 28.2282],
+            '郑州': [113.6253, 34.7466],
+            '济南': [117.1205, 36.6510],
+            '福州': [119.2965, 26.0745],
+            '厦门': [118.0894, 24.4798],
+            '昆明': [102.8329, 24.8801],
+            '贵阳': [106.6302, 26.6477],
+            '南宁': [108.3661, 22.8172],
+            '海口': [110.1999, 20.0174],
+            '三亚': [109.5122, 18.2528],
+            '兰州': [103.8343, 36.0611],
+            '银川': [106.2309, 38.4872],
+            '西宁': [101.7782, 36.6171],
+            '乌鲁木齐': [87.6168, 43.8256],
+            '拉萨': [91.1174, 29.6469],
+            '呼和浩特': [111.7492, 40.8426],
+            '太原': [112.5489, 37.8706],
+            '石家庄': [114.5149, 38.0423],
+            '长春': [125.3235, 43.8171]
+        };
+        
+        // 全局变量存储航班数据
+        let allFlightData = [];
+        let allCityData = [];
+        let allCitySet = new Set();
+        let mapChartInstance = null;
+        
+        // 显示航班地图
+        async function showFlightMap() {
+            try {
+                const response = await fetch('/api/flights');
+                const result = await response.json();
+                const flights = result.flights || [];
+                
+                allFlightData = [];
+                allCityData = [];
+                allCitySet = new Set();
+                
+                const mapModal = document.getElementById('flight-map-modal');
+                mapModal.classList.add('active');
+                
+                const chartDom = document.getElementById('flight-map');
+                mapChartInstance = echarts.init(chartDom);
+                
+                flights.forEach(flight => {
+                    const departureCity = flight.departure_city;
+                    const arrivalCity = flight.arrival_city;
+                    
+                    if (cityCoordinates[departureCity] && cityCoordinates[arrivalCity]) {
+                        allCitySet.add(departureCity);
+                        allCitySet.add(arrivalCity);
+                        
+                        let color = '#38a169';
+                        if (flight.status === '延误') {
+                            color = '#dd6b20';
+                        } else if (flight.status === '取消') {
+                            color = '#e53e3e';
+                        }
+                        
+                        allFlightData.push({
+                            fromName: departureCity,
+                            toName: arrivalCity,
+                            coords: [cityCoordinates[departureCity], cityCoordinates[arrivalCity]],
+                            lineStyle: {
+                                color: color,
+                                width: 2,
+                                curveness: 0.2
+                            },
+                            flightNumber: flight.flight_number,
+                            airline: flight.airline,
+                            status: flight.status,
+                            flightDate: flight.flight_date
+                        });
+                    }
+                });
+                
+                allCitySet.forEach(city => {
+                    if (cityCoordinates[city]) {
+                        allCityData.push({
+                            name: city,
+                            value: cityCoordinates[city]
+                        });
+                    }
+                });
+                
+                updateMapChart(allFlightData, allCityData);
+                
+                window.addEventListener('resize', function() {
+                    if (mapChartInstance) {
+                        mapChartInstance.resize();
+                    }
+                });
+                
+                mapModal.chartInstance = mapChartInstance;
+                
+                // 添加日期筛选事件监听器
+                const applyDateFilterBtn = document.getElementById('apply-date-filter');
+                const clearDateFilterBtn = document.getElementById('clear-date-filter');
+                
+                if (applyDateFilterBtn) {
+                    applyDateFilterBtn.onclick = function() {
+                        const dateFilter = document.getElementById('map-date-filter').value;
+                        filterFlightsByDate(dateFilter);
+                    };
+                }
+                
+                if (clearDateFilterBtn) {
+                    clearDateFilterBtn.onclick = function() {
+                        document.getElementById('map-date-filter').value = '';
+                        updateMapChart(allFlightData, allCityData);
+                    };
+                }
+                
+            } catch ( error) {
+                console.error('加载航班地图失败:', error);
+                alert('加载航班地图失败，请稍后重试');
+            }
+        }
+        
+        // 根据日期筛选航班
+        function filterFlightsByDate(dateFilter) {
+            const filteredFlightData = [];
+            const filteredCitySet = new Set();
+            
+            if (!dateFilter) {
+                filteredFlightData.push(...allFlightData);
+                allCitySet.forEach(city => filteredCitySet.add(city));
+            } else {
+                allFlightData.forEach(flight => {
+                    if (flight.flightDate === dateFilter) {
+                        filteredFlightData.push(flight);
+                        filteredCitySet.add(flight.fromName);
+                        filteredCitySet.add(flight.toName);
+                    }
+                });
+            }
+            
+            const filteredCityData = [];
+            filteredCitySet.forEach(city => {
+                if (cityCoordinates[city]) {
+                    filteredCityData.push({
+                        name: city,
+                        value: cityCoordinates[city]
+                    });
+                }
+            });
+            
+            updateMapChart(filteredFlightData, filteredCityData);
+        }
+        
+        // 更新地图图表
+        function updateMapChart(flightData, cityData) {
+            if (!mapChartInstance) return;
+            
+            const option = {
+                title: {
+                    text: '中国航班航线图',
+                    left: 'center',
+                    top: 10
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if (params.dataType === 'edge') {
+                            const flight = params.data;
+                            return `
+                                <div style="padding: 10px;">
+                                    <strong>${flight.flightNumber}</strong><br/>
+                                    航空公司: ${flight.airline}<br/>
+                                    航线: ${flight.fromName} → ${flight.toName}<br/>
+                                    状态: <span style="color: ${flight.lineStyle.color}">${flight.status}</span>
+                                </div>
+                            `;
+                        } else if (params.dataType === 'node') {
+                            return params.data.name;
+                        }
+                        return '';
+                    }
+                },
+                geo: {
+                    map: 'china',
+                    roam: true,
+                    zoom: 1.2,
+                    label: {
+                        show: true,
+                        fontSize: 10
+                    },
+                    itemStyle: {
+                        areaColor: '#f3f4f6',
+                        borderColor: '#d1d5db'
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            areaColor: '#e5e7eb'
+                        }
+                    }
+                },
+                series: [
+                    {
+                        type: 'lines',
+                        coordinateSystem: 'geo',
+                        data: flightData,
+                        lineStyle: {
+                            width: 2,
+                            opacity: 0.6,
+                            curveness: 0.2
+                        },
+                        effect: {
+                            show: true,
+                            period: 6,
+                            trailLength: 0.7,
+                            color: 'inherit'
+                        }
+                    },
+                    {
+                        type: 'effectScatter',
+                        coordinateSystem: 'geo',
+                        data: cityData,
+                        symbolSize: 8,
+                        showEffectOn: 'render',
+                        rippleEffect: {
+                            brushType: 'stroke'
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}',
+                            position: 'right',
+                            fontSize: 10
+                        },
+                        itemStyle: {
+                            color: '#2b6cb0',
+                            shadowBlur: 10,
+                            shadowColor: '#2b6cb0'
+                        }
+                    }
+                ]
+            };
+            
+            mapChartInstance.setOption(option);
+        }
+        
+        // 关闭航班地图模态框
+        function closeFlightMapModal() {
+            const mapModal = document.getElementById('flight-map-modal');
+            if (mapModal) {
+                mapModal.classList.remove('active');
+                if (mapModal.chartInstance) {
+                    mapModal.chartInstance.dispose();
+                    mapModal.chartInstance = null;
+                }
+            }
+        }
+
+        // --- 航司自动完成功能 ---
+        // 页面加载时获取机场数据
+        window.addEventListener('load', function() {
+            // 直接使用 static/airports.js 中的数据 AIRPORT_DATA
+            // 初始化两个输入框
+            setupAirportAutocomplete('modal-departure-airport', 'modal-departure-city');
+            setupAirportAutocomplete('modal-arrival-airport', 'modal-arrival-city');
+            
+            // 初始化航司自动完成
+            setupAirlineAutocomplete();
+        });
+
+        function setupAirlineAutocomplete() {
+            const input = document.getElementById('modal-airline');
+            const previewSpan = document.getElementById('full-flight-number-preview');
+            const flightNumInput = document.getElementById('modal-flight-number');
+            if (!input) return;
+
+            // 恢复IATA代码
+            const savedIata = input.dataset.iata;
+            const flightNum = flightNumInput.value.trim();
+            if (savedIata && flightNum) {
+                previewSpan.textContent = savedIata + flightNum;
+            } else {
+                previewSpan.textContent = (savedIata || '??') + (flightNum || '??');
+            }
+
+            // 获取或创建列表容器
+            let listId = 'modal-airline-list';
+            let listDiv = document.getElementById(listId);
+            if (!listDiv) {
+                listDiv = document.createElement("div");
+                listDiv.setAttribute("id", listId);
+                listDiv.setAttribute("class", "autocomplete-items");
+                input.parentNode.appendChild(listDiv);
+            }
+
+            input.addEventListener("input", function(e) {
+                const val = this.value;
+                listDiv.innerHTML = "";
+                if (!val) return;
+                
+                // 使用 AIRLINE_DATA 全局变量
+                const data = window.AIRLINE_DATA || [];
+                let count = 0;
+                
+                data.forEach(airline => {
+                    if (count >= 10) return;
+                    
+                    const match = (airline.name_cn && airline.name_cn.includes(val)) || 
+                                  (airline.name_en && airline.name_en.toLowerCase().includes(val.toLowerCase())) ||
+                                  (airline.iata && airline.iata.toUpperCase().includes(val.toUpperCase())) ||
+                                  (airline.icao && airline.icao.toUpperCase().includes(val.toUpperCase()));
+                    
+                    if (match) {
+                        const item = document.createElement("div");
+                        item.innerHTML = `<strong>${airline.name_cn}</strong> - ${airline.iata}`;
+                        item.addEventListener("click", function() {
+                            input.value = airline.name_cn;
+                            input.dataset.iata = airline.iata;
+                            input.dataset.icao = airline.icao;
+                            
+                            // 更新预览
+                            const fNum = flightNumInput.value.trim();
+                            previewSpan.textContent = airline.iata + (fNum || '??');
+                            
+                            listDiv.innerHTML = "";
+                        });
+                        listDiv.appendChild(item);
+                        count++;
+                    }
+                });
+            });
+
+            // 点击外部关闭列表
+            document.addEventListener("click", function(e) {
+                if (e.target !== input) {
+                    listDiv.innerHTML = "";
+                }
+            });
+        }
+        
+        // --- 机场搜索逻辑优化 ---
+        function setupAirportAutocomplete(inputId, cityInputId) {
+            const input = document.getElementById(inputId);
+            const cityInput = document.getElementById(cityInputId);
+            if (!input) return;
+
+            // 获取或创建列表容器
+            let listId = inputId + "-list";
+            let listDiv = document.getElementById(listId);
+            // 如果之前没在HTML里写，就在这里动态创建
+            if (!listDiv) {
+                listDiv = document.createElement("div");
+                listDiv.setAttribute("id", listId);
+                listDiv.setAttribute("class", "autocomplete-items");
+                input.parentNode.appendChild(listDiv);
+            }
+
+            // 监听输入
+            input.addEventListener("input", function(e) {
+                const val = this.value;
+                // 清空之前的列表
+                listDiv.innerHTML = "";
+                if (!val) return false;
+                
+                // 使用本地 AIRPORT_DATA，如果未加载则回退到空数组
+                const data = window.AIRPORT_DATA || [];
+                
+                let count = 0;
+                // 遍历机场数据
+                for (let i = 0; i < data.length; i++) {
+                    const airport = data[i];
+                    // 匹配逻辑：名称、城市、三字码
+                    if ((airport.name && airport.name.includes(val)) || 
+                        (airport.city && airport.city.includes(val)) || 
+                        (airport.code && airport.code.includes(val.toUpperCase()))) {
+                        
+                        if (count >= 10) break; // 最多显示10条
+
+                        const item = document.createElement("div");
+                        // 标粗匹配项（简单处理）
+                        item.innerHTML = `<strong>${airport.city}</strong> - ${airport.name} (${airport.code})`;
+                        
+                        // 点击事件
+                        item.addEventListener("click", function() {
+                            input.value = airport.name;
+                            if (cityInput) {
+                                cityInput.value = airport.city;
+                            }
+                            listDiv.innerHTML = "";
+                        });
+                        listDiv.appendChild(item);
+                        count++;
+                    }
+                }
+            });
+            
+            // 点击外部关闭
+            document.addEventListener("click", function (e) {
+                if (e.target !== input) {
+                    listDiv.innerHTML = "";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

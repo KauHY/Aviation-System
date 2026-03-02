@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="基于Python+区块链的民航客机检修记录存证系统">
+    <meta name="keywords" content="区块链,民航检修,存证系统,公私钥认证">
+    <meta name="author" content="航空技术团队">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/style.css">
+    <style>
+        /* 字体优化 */
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-display: swap;
+            background-color: #f8fafc;
+        }
+        
+        /* 容器样式 */
+        /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* 导航栏 */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+        
+        .navbar-logo h1 {
+            font-size: 20px;
+            color: #2b6cb0;
+            margin: 0;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .navbar-menu a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-menu a:hover {
+            background: #f1f5f9;
+            color: #2b6cb0;
+        }
+        
+        .navbar-menu a.active {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2b6cb0;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .logout-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        /* 页面标题 */
+        .page-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .page-title h1 {
+            color: #2b6cb0;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-title p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        /* 系统介绍 */
+        .system-intro {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 40px;
+        }
+        
+        .system-intro h2 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .system-intro p {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        /* 核心功能 */
+        .features-section {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 40px;
+        }
+        
+        .features-section h2 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .feature-card {
+            background: #f8fafc;
+            padding: 30px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-card h3 {
+            color: #2b6cb0;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .feature-card p {
+            color: #718096;
+            line-height: 1.6;
+        }
+        
+        /* 角色权限 */
+        .roles-section {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 40px;
+        }
+        
+        .roles-section h2 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .roles-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        .roles-table th,
+        .roles-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .roles-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #2b6cb0;
+        }
+        
+        .roles-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        /* 系统架构 */
+        .architecture-section {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 40px;
+        }
+        
+        .architecture-section h2 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .architecture-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .architecture-step {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2b6cb0;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-content h3 {
+            color: #2d3748;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .step-content p {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        
+        /* 操作按钮 */
+        .action-buttons {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+            margin-left: 15px;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-title h1 {
+                font-size: 24px;
+            }
+            
+            .system-intro,
+            .features-section,
+            .roles-section,
+            .architecture-section {
+                padding: 30px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .architecture-step {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .step-number {
+                margin-bottom: 10px;
+            }
+            
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .btn-secondary {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+                        <nav class="unified-navbar">
+            <div class="unified-navbar-left">
+                <a href="/" class="unified-home-btn">返回主页</a>
+                <div class="unified-navbar-menu">
+                    <a href="/video-system" class="unified-navbar-menu">远程视频</a>
+                    <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+                    <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+                    <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+                    <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a>
+                </div>
+            </div>
+            
+            <div class="unified-navbar-right">
+                <div class="unified-user-info" id="userInfo">
+                    <div class="unified-user-avatar" id="user-avatar">U</div>
+                    <div class="unified-user-details">
+                        <div class="unified-user-name" id="user-name">未登录</div>
+                        <div class="unified-user-role" id="user-role">访客</div>
+                    </div>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/profile">查看个人信息</a>
+                    <a href="/login" class="logout">退出登录</a>
+                </div>
+            </div>
+        </nav>
+        <script src="/static/unified-header.js"></script>
+        <script src="/static/unified-header.js"></script>
+
+        
+        <!-- 页面标题 -->
+        <div class="page-title">
+            <h1>基于Python+区块链的民航客机检修记录存证系统</h1>
+            <p>采用公私钥身份认证机制，确保检修记录安全、透明、不可篡改</p>
+        </div>
+        
+        <!-- 系统介绍 -->
+        <div class="system-intro">
+            <h2>系统核心定位</h2>
+            <p>沿用"区块链不可篡改性+民航检修存证"核心逻辑，以Python为主开发语言，搭配Solidity智能合约，适配"总负责人-管理人员-技术人员"三级角色，集成公私钥身份认证机制（免二次登录），聚焦"技术人员创建-管理人员审批-总负责人管控"核心流程，确保数据安全、权责清晰、操作高效。</p>
+        </div>
+        
+        <!-- 核心功能 -->
+        <div class="features-section">
+            <h2>核心功能模块</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h3>公私钥身份认证</h3>
+                    <p>用户注册时自动生成专属公私钥对，私钥由用户自主保管，公钥作为唯一身份标识上链，与用户角色永久绑定。所有操作均需通过私钥签名验证，确保操作不可伪造。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📋</div>
+                    <h3>维修记录管理</h3>
+                    <p>技术人员录入维修记录，自动生成唯一Hash ID，上链存储。支持记录创建、审批、编辑/删除，全程留痕可追溯。状态流转：Pending（待审批）→ Released（已放行）。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <h3>分级审批流程</h3>
+                    <p>基于公私钥签名的审批机制，管理人员执行互检签名、必检签名、放行签名，审批信息上链留存。支持审批驳回，驳回原因通过私钥签名上链。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>多维度查询追溯</h3>
+                    <p>支持按工作单号、飞机注册号、技术人员公钥/工号查询。前端展示记录完整流转链路，支持导出含公私钥签名验证信息的PDF凭证。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3>角色权限管理</h3>
+                    <p>适配三级角色：总负责人（系统管控）、管理人员（审批审核）、技术人员（记录创建）。基于公私钥身份绑定，确保权限清晰，操作安全。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>安全保障机制</h3>
+                    <p>私钥仅用于签名验证，不存储在系统服务器；公钥上链公开，用于身份识别与操作追溯；所有签名信息同步上链，全程可追溯。</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 角色权限 -->
+        <div class="roles-section">
+            <h2>角色与权限设计</h2>
+            <table class="roles-table">
+                <thead>
+                    <tr>
+                        <th>角色</th>
+                        <th>核心定位</th>
+                        <th>具体权限范围</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>总负责人</td>
+                        <td>系统终极管控者</td>
+                        <td>
+                            1. 合约部署与初始化，配置初始用户公私钥与角色映射；<br>
+                            2. 记录管控：通过私钥签名编辑未放行记录、删除违规记录；<br>
+                            3. 权限管理：添加/移除管理人员、技术人员；<br>
+                            4. 全量审计：查询所有维修记录、审批日志、操作历史；<br>
+                            5. 紧急管控：冻结异常记录流转，处理审批争议。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>管理人员</td>
+                        <td>流程审批与数据审核者</td>
+                        <td>
+                            1. 审批操作：通过私钥签名执行互检、必检、放行签名；<br>
+                            2. 数据审核：校验技术人员创建的记录完整性，驳回无效记录；<br>
+                            3. 权限查询：查看管辖范围内所有维修记录，追踪流转状态；<br>
+                            4. 反馈提交：通过私钥签名上链提交系统优化建议。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>技术人员</td>
+                        <td>记录创建与一线执行者</td>
+                        <td>
+                            1. 记录创建：录入飞机基础信息、动态维修数据，勾选"是否必检项目"；<br>
+                            2. 签名操作：完成维修后通过私钥执行"工作者签名"；<br>
+                            3. 数据补充：未放行记录可通过私钥签名补充动态数据；<br>
+                            4. 权限查询：查看本人创建/参与的记录，查询所负责飞机的历史维修数据。
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 系统架构 -->
+        <div class="architecture-section">
+            <h2>系统架构设计</h2>
+            <div class="architecture-steps">
+                <div class="architecture-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>区块链层</h3>
+                        <p>基于Ethereum（Hardhat）私有链环境，核心为Solidity智能合约。存储维修记录、签名信息（公钥、时间戳）、用户公私钥与角色映射表、操作日志。执行权限校验与业务逻辑，提供零Gas费机制，降低使用成本。</p>
+                    </div>
+                </div>
+                <div class="architecture-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>后端服务层（Python主导）</h3>
+                        <p>技术栈：Python 3.x + Flask/Django、web3.py、cryptography。将智能合约函数封装为RESTful API，校验前端录入数据，格式化时间戳，生成Hash ID，处理公私钥签名验证，维护用户登录状态，关联公钥与角色权限。</p>
+                    </div>
+                </div>
+                <div class="architecture-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>前端应用层（Python主导）</h3>
+                        <p>技术栈：Python + PyQt5/Tkinter（桌面端）或Django Templates/Flask + Vue.js（Web端）。提供公私钥备份/找回、用户登录、签名验证工具，以及各角色专属功能模块：技术人员记录录入、管理人员审批操作、总负责人系统管控。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="window.location.href='/tcg'">进入检修系统</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/login'">注册/登录</button>
+        </div>
+    </div>
+    </script>
+</body>
+</html>

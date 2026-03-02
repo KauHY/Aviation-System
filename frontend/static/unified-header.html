@@ -1,0 +1,283 @@
+<!-- 统一页眉 -->
+<style>
+    /* 统一页眉样式 - 白色背景 */
+    .unified-navbar {
+        background: #ffffff;
+        padding: 16px 32px;
+        border-radius: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        margin-bottom: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        min-height: 70px;
+        position: relative;
+        z-index: 1000;
+    }
+    
+    .unified-navbar-left {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex: 1;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .unified-navbar-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 40px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .unified-navbar-center h1 {
+        font-size: 28px;
+        color: #2b6cb0;
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .unified-navbar-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .unified-navbar-menu a {
+        color: #475569;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+    
+    .unified-navbar-menu a:hover {
+        background: #f1f5f9;
+        color: #2b6cb0;
+    }
+    
+    .unified-navbar-menu a.active {
+        background: #2b6cb0;
+        color: white;
+    }
+    
+    .unified-user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f1f5f9;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    
+    .unified-user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #2b6cb0;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+    
+    .unified-user-details {
+        text-align: right;
+    }
+    
+    .unified-user-name {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 14px;
+    }
+    
+    .unified-user-role {
+        font-size: 12px;
+        color: #718096;
+    }
+    
+    .unified-logout-btn {
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+    
+    .unified-logout-btn:hover {
+        background: #e2e8f0;
+        color: #2d3748;
+    }    
+    .unified-home-btn {
+        color: #475569;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+    
+    .unified-home-btn:hover {
+        background: #f1f5f9;
+    }
+    
+    /* 下拉菜单 */
+    .user-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-top: 8px;
+        min-width: 180px;
+        display: none;
+        z-index: 1000;
+    }
+    
+    .user-dropdown.active {
+        display: block;
+    }
+    
+    .user-dropdown a {
+        display: block;
+        padding: 12px 16px;
+        color: #475569;
+        text-decoration: none;
+        font-size: 14px;
+        transition: background 0.3s ease;
+    }
+    
+    .user-dropdown a:hover {
+        background: #f1f5f9;
+    }
+    
+    .user-dropdown a.logout {
+        color: #e53e3e;
+    }
+    
+    .user-dropdown a.logout:hover {
+        background: #fee2e2;
+    }
+</style>
+
+<nav class="unified-navbar">
+    <div class="unified-navbar-left">
+        <a href="/video-system" class="unified-navbar-menu">远程视频</a>
+        <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+        <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+        <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+        <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a>
+    </div>
+    
+    <div class="unified-navbar-center">
+        <h1>飞机检修</h1>
+    </div>
+    
+    <div class="unified-navbar-right">
+        <a href="/" class="unified-home-btn">返回主页</a>
+        <div class="unified-user-info" id="userInfo">
+            <div class="unified-user-avatar" id="user-avatar">U</div>
+            <div class="unified-user-details">
+                <div class="unified-user-name" id="user-name">未登录</div>
+                <div class="unified-user-role" id="user-role">访客</div>
+            </div>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+            <a href="/profile">查看个人信息</a>
+            <a href="/login" class="logout">退出登录</a>
+        </div>
+    </div>
+</nav>
+
+<script>
+    // 更新用户信息
+    function updateUserInfo() {
+        const username = localStorage.getItem('currentUser');
+        const role = localStorage.getItem('currentUserRole');
+        
+        if (username) {
+            document.getElementById('user-name').textContent = username;
+            document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
+            
+            // 设置角色名称
+            const roleMap = {
+                'admin': '总负责人',
+                'manager': '管理人员',
+                'technician': '技术人员',
+                'user': '用户'
+            };
+            document.getElementById('user-role').textContent = roleMap[role] || role;
+        }
+    }
+    
+    // 设置当前页面激活状态
+    function setActivePage() {
+        const currentPath = window.location.pathname;
+        const links = document.querySelectorAll('.unified-navbar-menu a');
+        
+        links.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === currentPath || 
+                (currentPath.startsWith(link.getAttribute('href')) && currentPath !== '/') ||
+                (currentPath === '/blockchain-deposit/records' && link.getAttribute('href') === '/blockchain-deposit') ||
+                (currentPath === '/blockchain-deposit/audit' && link.getAttribute('href') === '/blockchain-deposit')) {
+                link.classList.add('active');
+            }
+        });
+    }
+    
+    // 个人信息下拉菜单
+    const userInfo = document.getElementById('userInfo');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    userInfo.addEventListener('click', (e) => {
+        e.stopPropagation();
+        userDropdown.classList.toggle('active');
+    });
+    
+    // 点击页面其他地方关闭下拉菜单
+    document.addEventListener('click', () => {
+        userDropdown.classList.remove('active');
+    });
+    
+    // 阻止下拉菜单内的点击事件冒泡
+    userDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+    
+    // 退出登录
+    userDropdown.addEventListener('click', (e) => {
+        if (e.target.classList.contains('logout')) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('currentUserRole');
+            localStorage.removeItem('currentUserAddress');
+            localStorage.removeItem('currentUserPublicKey');
+            localStorage.removeItem('currentUserEmployeeId');
+            localStorage.removeItem('private_key');
+            window.location.href = '/login';
+        }
+    });
+    
+    // 页面加载时执行
+    window.onload = function() {
+        updateUserInfo();
+        setActivePage();
+    };
+</script>

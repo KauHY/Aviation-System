@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检修管理 - 飞机检修远程操作系统</title>
+    <link rel="stylesheet" href="/static/unified-header.css">
+    <style>
+        /* 页面容器 */
+        /* 统一容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* 统一页面背景 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .page-header h1 {
+            color: #2b6cb0;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .page-header h1 {
+            color: #2b6cb0;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        /* 功能导航 */
+        .function-nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        .function-btn {
+            padding: 12px 24px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            color: #475569;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .function-btn:hover {
+            border-color: #2b6cb0;
+            color: #2b6cb0;
+            transform: translateY(-2px);
+        }
+        
+        .function-btn.active {
+            background: #2b6cb0;
+            border-color: #2b6cb0;
+            color: white;
+        }
+        
+        /* 功能内容区域 */
+        .function-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+        
+        /* 检测人员分配区域 */
+        .inspector-assignment-section {
+            display: none;
+        }
+        
+        .inspector-assignment-section.active {
+            display: block;
+        }
+        
+        .inspector-assignment-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+        
+        .inspector-section,
+        .task-section {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .inspector-list,
+        .task-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .inspector-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .inspector-item:hover {
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+        
+        .inspector-info h4 {
+            color: #2b6cb0;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .inspector-info p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .inspector-status {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .inspector-status.available {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .inspector-status.busy {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .assignment-task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .assignment-task-item:hover {
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+        
+        .assignment-task-info h4 {
+            color: #2b6cb0;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .assignment-task-info p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .assignment-task-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .btn.primary {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .btn.primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        .btn.success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn.success:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+        
+        .btn.warning {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .btn.warning:hover {
+            background: #dd6b20;
+            transform: translateY(-1px);
+        }
+        
+        .btn.danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn.danger:hover {
+            background: #e53e3e;
+            transform: translateY(-1px);
+        }
+        
+        .btn.assign {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn.assign:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+        
+        .btn.complete {
+            background: #2b6cb0;
+            color: white;
+        }
+        
+        .btn.complete:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        /* 维修记录模态框样式 */
+        #maintenance-form textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+        
+        #maintenance-form textarea:focus {
+            outline: none;
+            border-color: #2b6cb0;
+            box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+        }
+        
+        #maintenance-form input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        #maintenance-form input[type="number"]:focus {
+            outline: none;
+            border-color: #2b6cb0;
+            box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+        }
+        
+        #maintenance-form input[readonly] {
+            background: #f8fafc;
+            color: #718096;
+            cursor: not-allowed;
+        }
+        
+        #maintenance-form label input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
+        #maintenance-form label {
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        /* 区块链存证区域 */
+        .blockchain-deposit-section {
+            display: none;
+        }
+        
+        .blockchain-deposit-section.active {
+            display: block;
+        }
+        
+        .blockchain-deposit-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+        
+        .blockchain-card {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .blockchain-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+        
+        .blockchain-card h3 {
+            color: #2b6cb0;
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .blockchain-card p {
+            color: #718096;
+            margin-bottom: 20px;
+        }
+        
+        .card-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #2b6cb0;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .card-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        /* 任务状态标签 */
+        .task-status {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        
+        .task-status.pending {
+            background: #feebc8;
+            color: #c05621;
+        }
+        
+        .task-status.assigned {
+            background: #bee3f8;
+            color: #2b6cb0;
+        }
+        
+        .task-status.completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.active {
+            display: block;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .navbar-menu {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .navbar-user {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-header h1 {
+                font-size: 24px;
+            }
+            
+            .function-nav {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .function-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .inspector-assignment-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .blockchain-deposit-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .function-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+                <nav class="unified-navbar">
+            <div class="unified-navbar-left">
+                <a href="/" class="unified-home-btn">返回主页</a>
+                <div class="unified-navbar-menu">
+                    <a href="/video-system" class="unified-navbar-menu">远程视频</a>
+                    <a href="/image-inspection" class="unified-navbar-menu">智能检修</a>
+                    <a href="/flight-search" class="unified-navbar-menu">航班查询</a>
+                    <a href="/inspection-management" class="unified-navbar-menu">区块链管理</a>
+                    <a href="/aircraft-info" class="unified-navbar-menu">航空器信息</a></div>
+            </div>
+            
+            <div class="unified-navbar-right">
+                <div class="unified-user-info" id="userInfo">
+                    <div class="unified-user-avatar" id="user-avatar">U</div>
+                    <div class="unified-user-details">
+                        <div class="unified-user-name" id="user-name">未登录</div>
+                        <div class="unified-user-role" id="user-role">访客</div>
+                    </div>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/profile">查看个人信息</a>
+                    <a href="/system-settings">系统设置</a>
+                    <a href="/system-monitor">系统监控</a>
+                    <a href="/report-generation">报表生成</a>
+                    <a href="/permission-management">权限管理</a>
+            <a href="/login" class="logout">退出登录</a>
+                </div>
+            </div>
+        </nav>
+        <script src="/static/unified-header.js"></script>
+<!-- 页面标题 -->
+        <div class="page-header">
+            <h1>检修管理</h1>
+            <p>整合检测人员分配和区块链存证功能，实现高效协同的检修管理流程</p>
+        </div>
+        
+        <!-- 功能导航 -->
+        <div class="function-nav">
+            <button class="function-btn active" data-target="inspector-assignment">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                人员分配
+            </button>
+            <button class="function-btn" data-target="blockchain-deposit">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                区块链存证
+            </button>
+            <button class="function-btn" onclick="window.location.href='/blockchain-visualization'">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                区块链可视化
+            </button>
+        </div>
+        
+        <!-- 功能内容区域 -->
+        <div class="function-content">
+            <!-- 检测人员分配区域 -->
+            <div class="inspector-assignment-section active" id="inspector-assignment">
+                <div class="inspector-assignment-container">
+                    <!-- 检测人员列表 -->
+                    <div class="inspector-section">
+                        <h3>检测人员列表</h3>
+                        <div class="inspector-list" id="inspector-list">
+                            <!-- 检测人员列表将在此动态添加 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 任务列表 -->
+                    <div class="task-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>检测任务列表</h3>
+                            <button class="btn primary" id="create-task-btn">创建任务</button>
+                        </div>
+                        <div class="task-list" id="task-list">
+                            <!-- 任务列表将在此动态添加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 区块链存证区域 -->
+            <div class="blockchain-deposit-section" id="blockchain-deposit">
+                <div class="blockchain-deposit-container">
+                    <!-- 创建维修记录 -->
+                    <div class="blockchain-card">
+                        <h3>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            创建维修记录
+                        </h3>
+                        <p>技术人员创建维修记录，系统自动生成唯一标识并准备上链存证。</p>
+                        <button class="card-btn" onclick="window.location.href='/blockchain-deposit/records/create'">创建记录</button>
+                    </div>
+                    
+                    <!-- 维修记录列表 -->
+                    <div class="blockchain-card">
+                        <h3>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                            维修记录列表
+                        </h3>
+                        <p>查看所有维修记录，支持按状态和角色筛选，实时了解记录审批进度。</p>
+                        <button class="card-btn" onclick="window.location.href='/blockchain-deposit/records'">查看记录</button>
+                    </div>
+                    
+                    <!-- 区块链存证统计 -->
+                    <div class="blockchain-card">
+                        <h3>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            存证统计
+                        </h3>
+                        <p>查看区块链存证系统的统计数据，包括总记录数、完成率和平均处理时间。</p>
+                        <button class="card-btn" onclick="window.location.href='/blockchain-visualization'">查看统计</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 创建/编辑任务模态框 -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">创建任务</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label for="flight-number">飞机注册号</label>
+                    <input type="text" id="flight-number" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-type">任务类型</label>
+                    <input type="text" id="task-type" required>
+                </div>
+                <div class="form-group">
+                    <label for="priority">优先级</label>
+                    <select id="priority" required>
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="deadline">截止时间</label>
+                    <input type="datetime-local" id="deadline" required>
+                </div>
+                <div class="form-group">
+                    <label for="assignee">分配给</label>
+                    <select id="assignee" required>
+                        <option value="">请选择技术人员</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" id="cancel-btn">取消</button>
+                    <button type="submit" class="btn success" id="save-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 维修记录创建模态框 -->
+    <div id="maintenance-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>创建维修记录</h2>
+                <span class="close" onclick="closeMaintenanceModal()">&times;</span>
+            </div>
+            <form id="maintenance-form">
+                <input type="hidden" id="maintenance-task-id">
+                <div class="form-group">
+                    <label for="maintenance-flight-number">飞机注册号</label>
+                    <input type="text" id="maintenance-flight-number" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="maintenance-task-type">任务类型</label>
+                    <input type="text" id="maintenance-task-type" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="maintenance-type">维修类型</label>
+                    <select id="maintenance-type" required>
+                        <option value="routine">例行检查</option>
+                        <option value="corrective">故障维修</option>
+                        <option value="preventive">预防性维护</option>
+                        <option value="overhaul">大修</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fault-description">故障描述</label>
+                    <textarea id="fault-description" rows="3" required placeholder="请描述故障情况"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="maintenance-measures">维修措施</label>
+                    <textarea id="maintenance-measures" rows="3" required placeholder="请描述采取的维修措施"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="parts-used">使用零件</label>
+                    <textarea id="parts-used" rows="2" placeholder="请列出使用的零件（可选）"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="maintenance-duration">维修时长（小时）</label>
+                    <input type="number" id="maintenance-duration" min="0" step="0.5" required placeholder="例如：2.5">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="blockchain-deposit" checked>
+                        同时创建区块链存证
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeMaintenanceModal()">取消</button>
+                    <button type="submit" class="btn success">提交并完成任务</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="static/script.js"></script>
+    <script src="static/contract-client.js"></script>
+    <script>
+        // 登录检查
+        function checkLogin() {
+            const currentUser = localStorage.getItem('currentUser');
+            
+            if (!currentUser) {
+                // 未登录，重定向到登录页面
+                window.location.href = '/login';
+            }
+        }
+        
+        // 检查任务权限
+        function hasTaskPermission(task) {
+            const currentUser = localStorage.getItem('currentUser');
+            const currentUserRole = localStorage.getItem('currentUserRole');
+            
+            // 管理人员和总负责人可以操作所有任务
+            if (currentUserRole === 'manager' || currentUserRole === 'admin') {
+                return true;
+            }
+            
+            // 技术人员只能操作分配给自己的任务
+            if (currentUserRole === 'technician') {
+                return task.assignee_id === currentUser;
+            }
+            
+            // 其他角色默认无权限
+            return false;
+        }
+        
+        // 显示权限提示
+        function showPermissionDenied() {
+            alert('您无权限查看');
+        }
+        
+        // 显示开始检测选项
+        function showStartOptions(taskId) {
+            const task = window.taskData ? window.taskData.find(t => t.id === taskId) : null;
+            if (!task) {
+                alert('任务不存在');
+                return;
+            }
+            
+            // 创建选项对话框
+            const dialogHtml = `
+                <div id="start-options-dialog" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 10000;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; min-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                        <h3 style="margin-top: 0; margin-bottom: 20px; color: #2d3748;">开始检测</h3>
+                        <p style="margin-bottom: 20px; color: #718096;">请选择检测方式：</p>
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <button onclick="completeTask('${taskId}')" style="padding: 15px 20px; background: #48bb78; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 16px;">完成</button>
+                            <button onclick="startImageInspection('${task.aircraft_registration}')" style="padding: 15px 20px; background: #2b6cb0; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 16px;">启动智能检修</button>
+                            <button onclick="startVideoSystem('${taskId}')" style="padding: 15px 20px; background: #ed8936; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 16px;">启动远程视频</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                            <button onclick="document.getElementById('start-options-dialog').remove()" style="padding: 10px 20px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">取消</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', dialogHtml);
+        }
+        
+        // 启动智能检修
+        function startImageInspection(flightNumber) {
+            window.location.href = '/image-inspection?flight=' + encodeURIComponent(flightNumber);
+        }
+        
+        // 启动远程视频
+        function startVideoSystem(taskId) {
+            window.location.href = '/video-system?task=' + taskId;
+        }
+        
+        // 加载检测人员列表
+        async function loadInspectors() {
+            try {
+                const response = await fetch('/api/inspectors');
+                const data = await response.json();
+                if (data.success) {
+                    const inspectorList = document.getElementById('inspector-list');
+                    inspectorList.innerHTML = '';
+                    
+                    // 填充检测人员列表
+                    data.inspectors.forEach(inspector => {
+                        const inspectorItem = document.createElement('div');
+                        inspectorItem.className = 'inspector-item';
+                        inspectorItem.innerHTML = `
+                            <div class="inspector-info">
+                                <h4>${inspector.name}</h4>
+                                <p>${inspector.position}</p>
+                                <p>专长: ${inspector.specialty}</p>
+                                ${inspector.current_task ? `<p>当前任务: ${inspector.current_task}</p>` : ''}
+                            </div>
+                            <div class="inspector-status ${inspector.status}">
+                                ${inspector.status === 'available' ? '可用' : '忙'}
+                            </div>
+                        `;
+                        inspectorList.appendChild(inspectorItem);
+                    });
+                    
+                    // 填充任务分配下拉选择框
+                    const assigneeSelect = document.getElementById('assignee');
+                    if (assigneeSelect) {
+                        assigneeSelect.innerHTML = '<option value="">请选择技术人员</option>';
+                        data.inspectors.forEach(inspector => {
+                            const option = document.createElement('option');
+                            option.value = inspector.id;
+                            option.textContent = `${inspector.name} (${inspector.position})`;
+                            assigneeSelect.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('加载检测人员失败:', error);
+            }
+        }
+        
+        // 加载任务列表
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                const data = await response.json();
+                console.log('任务数据:', data); // 添加调试信息
+                
+                if (data.success) {
+                    const taskList = document.getElementById('task-list');
+                    taskList.innerHTML = '';
+                    
+                    const currentUser = localStorage.getItem('currentUser');
+                    const currentUserRole = localStorage.getItem('currentUserRole');
+                    
+                    // 保存任务数据到全局变量，供权限检查使用
+                    window.taskData = data.tasks;
+                    
+                    data.tasks.forEach(task => {
+                        // 技术人员只能看到分配给自己的任务
+                        if (currentUserRole === 'technician' && task.assignee_id !== currentUser) {
+                            return; // 跳过不属于自己的任务
+                        }
+                        
+                        const taskItem = document.createElement('div');
+                        taskItem.className = 'assignment-task-item';
+                        taskItem.innerHTML = `
+                            <div class="assignment-task-info">
+                                <div class="task-status ${task.status}">
+                                    ${task.status === 'pending' ? '待分配' : task.status === 'assigned' ? '已分配' : '已完成'}
+                                </div>
+                                <h4>${task.aircraft_registration} - ${task.task_type}</h4>
+                                <p>优先级: ${task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}</p>
+                                <p>截止时间: ${task.deadline}</p>
+                                ${task.assignee_id ? `<p>已分配给: 检测人员 ${task.assignee_id}</p>` : ''}
+                            </div>
+                            <div class="assignment-task-actions">
+                                ${task.status !== 'completed' ? `
+                                    <button class="btn assign" onclick="assignTask('${task.id}')">分配</button>
+                                    ${task.status === 'assigned' ? `<button class="btn complete" onclick="completeTask('${task.id}')">完成</button>` : ''}
+                                ` : ''}
+                                <button class="btn warning" onclick="editTask('${task.id}')">编辑</button>
+                                <button class="btn danger" onclick="deleteTask('${task.id}')">删除</button>
+                                ${currentUserRole === 'technician' && task.status === 'assigned' ? `
+                                    <button class="btn primary" onclick="showStartOptions('${task.id}')">开始检测</button>
+                                ` : ''}
+                            </div>
+                        `;
+                        taskList.appendChild(taskItem);
+                    });
+                }
+            } catch (error) {
+                console.error('加载任务失败:', error);
+            }
+        }
+        
+        // 分配任务
+        async function assignTask(taskId) {
+            // 检查权限
+            const task = window.taskData ? window.taskData.find(t => t.id === taskId) : null;
+            if (!task || !hasTaskPermission(task)) {
+                showPermissionDenied();
+                return;
+            }
+            
+            try {
+                // 获取当前可用的技术人员
+                const response = await fetch('/api/inspectors');
+                const data = await response.json();
+                
+                if (!data.success || data.inspectors.length === 0) {
+                    alert('没有可用的技术人员');
+                    return;
+                }
+                
+                // 创建选择对话框
+                let selectHtml = '<div style="margin-bottom: 15px;">';
+                selectHtml += '<label for="inspector-select" style="display: block; margin-bottom: 10px; font-weight: 500;">选择技术人员：</label>';
+                selectHtml += '<select id="inspector-select" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 16px;">';
+                selectHtml += '<option value="">请选择技术人员</option>';
+                
+                data.inspectors.forEach(inspector => {
+                    const statusText = inspector.status === 'available' ? ' (可用)' : ' (忙)';
+                    selectHtml += `<option value="${inspector.id}">${inspector.name} - ${inspector.position}${statusText}</option>`;
+                });
+                
+                selectHtml += '</select>';
+                selectHtml += '</div>';
+                
+                // 显示自定义对话框
+                const dialogHtml = `
+                    <div id="assign-dialog" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 10000;">
+                        <div style="background: white; padding: 30px; border-radius: 12px; min-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                            <h3 style="margin-top: 0; margin-bottom: 20px; color: #2d3748;">分配任务</h3>
+                            ${selectHtml}
+                            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                                <button id="cancel-assign" style="padding: 10px 20px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">取消</button>
+                                <button id="confirm-assign" style="padding: 10px 20px; background: #2b6cb0; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">确认分配</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', dialogHtml);
+                
+                // 绑定事件
+                document.getElementById('cancel-assign').addEventListener('click', function() {
+                    document.getElementById('assign-dialog').remove();
+                });
+                
+                document.getElementById('confirm-assign').addEventListener('click', async function() {
+                    const inspectorId = document.getElementById('inspector-select').value;
+                    if (!inspectorId) {
+                        alert('请选择技术人员');
+                        return;
+                    }
+                    
+                    const assignResponse = await fetch('/api/tasks/assign', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ task_id: taskId, inspector_id: inspectorId })
+                    });
+                    
+                    const assignData = await assignResponse.json();
+                    if (assignData.success) {
+                        alert('任务分配成功');
+                        await loadInspectors();
+                        await loadTasks();
+                    } else {
+                        alert('任务分配失败: ' + assignData.message);
+                    }
+                    
+                    document.getElementById('assign-dialog').remove();
+                });
+                
+            } catch (error) {
+                console.error('分配任务失败:', error);
+                alert('分配任务失败');
+            }
+        }
+        
+        // 完成任务
+        async function completeTask(taskId) {
+            try {
+                // 获取任务详情
+                const taskResponse = await fetch(`/api/tasks/${taskId}`);
+                const taskData = await taskResponse.json();
+                
+                if (!taskData.success) {
+                    alert('获取任务详情失败');
+                    return;
+                }
+                
+                const task = taskData.task;
+                
+                // 显示维修记录创建模态框
+                document.getElementById('maintenance-task-id').value = task.id;
+                document.getElementById('maintenance-flight-number').value = task.aircraft_registration;
+                document.getElementById('maintenance-task-type').value = task.task_type;
+                document.getElementById('maintenance-modal').classList.add('active');
+                
+            } catch (error) {
+                console.error('完成任务失败:', error);
+                alert('完成任务失败');
+            }
+        }
+        
+        // 创建任务
+        async function createTask(taskData) {
+            try {
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('任务创建成功');
+                    await loadTasks();
+                    return true;
+                } else {
+                    alert('任务创建失败: ' + data.message);
+                    return false;
+                }
+            } catch (error) {
+                console.error('创建任务失败:', error);
+                alert('创建任务失败');
+                return false;
+            }
+        }
+        
+        // 获取任务详情
+        async function getTask(taskId) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`);
+                const data = await response.json();
+                if (data.success) {
+                    return data.task;
+                } else {
+                    alert('获取任务详情失败: ' + data.message);
+                    return null;
+                }
+            } catch (error) {
+                console.error('获取任务详情失败:', error);
+                return null;
+            }
+        }
+        
+        // 更新任务
+        async function updateTask(taskId, taskData) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('任务更新成功');
+                    await loadTasks();
+                    return true;
+                } else {
+                    alert('任务更新失败: ' + data.message);
+                    return false;
+                }
+            } catch (error) {
+                console.error('更新任务失败:', error);
+                alert('更新任务失败');
+                return false;
+            }
+        }
+        
+        // 删除任务
+        async function deleteTask(taskId) {
+            // 检查权限
+            const task = window.taskData ? window.taskData.find(t => t.id === taskId) : null;
+            if (!task || !hasTaskPermission(task)) {
+                showPermissionDenied();
+                return;
+            }
+            
+            if (!confirm('确定要删除这个任务吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('任务删除成功');
+                    await loadTasks();
+                } else {
+                    alert('任务删除失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('删除任务失败:', error);
+                alert('删除任务失败');
+            }
+        }
+        
+        // 编辑任务
+        async function editTask(taskId) {
+            // 检查权限
+            const task = window.taskData ? window.taskData.find(t => t.id === taskId) : null;
+            if (!task || !hasTaskPermission(task)) {
+                showPermissionDenied();
+                return;
+            }
+            
+            const taskData = await getTask(taskId);
+            if (!taskData) return;
+            
+            // 填充表单
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('flight-number').value = task.aircraft_registration;
+            document.getElementById('task-type').value = task.task_type;
+            document.getElementById('priority').value = task.priority;
+            
+            // 格式化截止时间为 datetime-local 格式
+            const deadline = new Date(task.deadline.replace(' ', 'T'));
+            document.getElementById('deadline').value = deadline.toISOString().slice(0, 16);
+            
+            // 设置已分配的技术人员
+            if (task.assignee_id) {
+                document.getElementById('assignee').value = task.assignee_id;
+            }
+            
+            // 显示模态框
+            document.getElementById('modal-title').textContent = '编辑任务';
+            document.getElementById('task-modal').classList.add('active');
+        }
+        
+        // 关闭维修记录模态框
+        function closeMaintenanceModal() {
+            document.getElementById('maintenance-modal').classList.remove('active');
+            document.getElementById('maintenance-form').reset();
+            document.getElementById('maintenance-task-id').value = '';
+        }
+        
+        // 创建区块链存证
+        async function createBlockchainDeposit(recordId) {
+            try {
+                const response = await fetch('/api/blockchain/deposit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ record_id: recordId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('区块链存证创建成功');
+                } else {
+                    alert('区块链存证创建失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('创建区块链存证失败:', error);
+                alert('创建区块链存证失败');
+            }
+        }
+        
+        // 页面加载时初始化
+        window.addEventListener('load', async function() {
+            checkLogin();
+            await loadInspectors();
+            await loadTasks();
+            
+            // 创建任务按钮点击事件
+            const createTaskBtn = document.getElementById('create-task-btn');
+            if (createTaskBtn) {
+                createTaskBtn.addEventListener('click', function() {
+                    document.getElementById('modal-title').textContent = '创建任务';
+                    document.getElementById('task-form').reset();
+                    document.getElementById('task-id').value = '';
+                    document.getElementById('task-modal').classList.add('active');
+                });
+            }
+            
+            // 维修记录表单提交事件
+            const maintenanceForm = document.getElementById('maintenance-form');
+            if (maintenanceForm) {
+                maintenanceForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const taskId = document.getElementById('maintenance-task-id').value;
+                    const shouldDeposit = document.getElementById('blockchain-deposit').checked;
+                    
+                    try {
+                        let recordId = '';
+                        
+                        // 如果需要创建区块链存证，使用智能合约
+                        if (shouldDeposit) {
+                            // 初始化合约客户端
+                            const contractClient = new ContractClient();
+                            await contractClient.init();
+                            
+                            // 获取当前用户的地址
+                            const userAddress = localStorage.getItem('currentUserAddress');
+                            if (!userAddress) {
+                                alert('用户地址不存在，请重新登录');
+                                return;
+                            }
+                            
+                            // 调用智能合约创建记录
+                            const result = await contractClient.createRecord(
+                                document.getElementById('maintenance-flight-number').value, // 使用航班号作为飞机注册号
+                                document.getElementById('maintenance-type').value,
+                                document.getElementById('fault-description').value + '\n' + 
+                                    document.getElementById('maintenance-measures').value,
+                                userAddress
+                            );
+                            
+                            if (result.success) {
+                                recordId = result.record_id;
+                                alert('维修记录创建成功！记录ID：' + recordId + '，区块哈希：' + result.block_hash);
+                            } else {
+                                alert('创建失败：' + (result.error || '未知错误'));
+                                return;
+                            }
+                        } else {
+                            // 不创建区块链存证，使用旧的API
+                            const maintenanceData = {
+                                aircraft_registration: document.getElementById('maintenance-flight-number').value,
+                                task_type: document.getElementById('maintenance-task-type').value,
+                                maintenance_type: document.getElementById('maintenance-type').value,
+                                fault_description: document.getElementById('fault-description').value,
+                                maintenance_measures: document.getElementById('maintenance-measures').value,
+                                parts_used: document.getElementById('parts-used').value,
+                                maintenance_duration: document.getElementById('maintenance-duration').value,
+                                task_id: taskId
+                            };
+                            
+                            const maintenanceResponse = await fetch('/api/maintenance', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(maintenanceData)
+                            });
+                            
+                            const maintenanceResult = await maintenanceResponse.json();
+                            
+                            if (!maintenanceResult.success) {
+                                alert('创建维修记录失败: ' + maintenanceResult.message);
+                                return;
+                            }
+                            
+                            recordId = maintenanceResult.record_id;
+                            alert('任务完成成功，维修记录已创建');
+                        }
+                        
+                        // 关闭模态框
+                        closeMaintenanceModal();
+                        
+                        // 重新加载任务列表
+                        await loadTasks();
+                    } catch (error) {
+                        console.error('创建维修记录失败:', error);
+                        alert('创建维修记录失败，请重试');
+                    }
+                });
+            }
+            
+            // 任务表单提交事件
+            const taskForm = document.getElementById('task-form');
+            if (taskForm) {
+                taskForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const taskId = document.getElementById('task-id').value;
+                    const taskData = {
+                        aircraft_registration: document.getElementById('flight-number').value,
+                        task_type: document.getElementById('task-type').value,
+                        priority: document.getElementById('priority').value,
+                        deadline: document.getElementById('deadline').value
+                    };
+                    
+                    let success;
+                    if (taskId) {
+                        success = await updateTask(taskId, taskData);
+                    } else {
+                        success = await createTask(taskData);
+                    }
+                    
+                    if (success) {
+                        document.getElementById('task-modal').classList.remove('active');
+                        document.getElementById('task-form').reset();
+                        document.getElementById('task-id').value = '';
+                    }
+                });
+            }
+            
+            // 模态框关闭按钮
+            const closeButtons = document.querySelectorAll('.close');
+            closeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const modal = this.closest('.modal');
+                    if (modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            });
+            
+            // 取消按钮
+            const cancelBtn = document.getElementById('cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    document.getElementById('task-modal').classList.remove('active');
+                    document.getElementById('task-form').reset();
+                    document.getElementById('task-id').value = '';
+                });
+            }
+            
+            // 功能导航按钮点击事件
+            const functionBtns = document.querySelectorAll('.function-btn[data-target]');
+            functionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有按钮的active类
+                    functionBtns.forEach(b => b.classList.remove('active'));
+                    // 添加当前按钮的active类
+                    this.classList.add('active');
+                    
+                    // 隐藏所有功能区域
+                    document.querySelectorAll('.inspector-assignment-section, .blockchain-deposit-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    
+                    // 显示目标区域
+                    const target = this.getAttribute('data-target');
+                    const targetSection = document.getElementById(target);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    }
+                });
+            });
+            
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                const taskModal = document.getElementById('task-modal');
+                const maintenanceModal = document.getElementById('maintenance-modal');
+                
+                if (taskModal && event.target === taskModal) {
+                    taskModal.classList.remove('active');
+                    document.getElementById('task-form').reset();
+                    document.getElementById('task-id').value = '';
+                }
+                
+                if (maintenanceModal && event.target === maintenanceModal) {
+                    maintenanceModal.classList.remove('active');
+                    document.getElementById('maintenance-form').reset();
+                    document.getElementById('maintenance-task-id').value = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
