@@ -161,18 +161,31 @@ async def startup_event():
     load_tasks()
     load_maintenance_records()
     load_flights()
-    load_airports()  # 加载机场数据
+    load_airport_data()  # 加载机场数据
     load_blockchain_events()
     initialize_blockchain()
     ensure_users_have_keys()
 
 app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
-app.mount("/PICTURES", StaticFiles(directory="../PICTURES"), name="PICTURES")
-# 挂载检修系统的静态文件
-app.mount("/tcg/static", StaticFiles(directory="../../tcg/static"), name="tcg_static")
+
+# 如果PICTURES目录存在，则挂载它
+if os.path.exists("../PICTURES"):
+    app.mount("/PICTURES", StaticFiles(directory="../PICTURES"), name="PICTURES")
+else:
+    print("警告: ../PICTURES 目录不存在，将跳过挂载")
+
+# 挂载检修系统的静态文件（如果存在）
+if os.path.exists("../../tcg/static"):
+    app.mount("/tcg/static", StaticFiles(directory="../../tcg/static"), name="tcg_static")
+
 templates = Jinja2Templates(directory="../frontend")
-# 添加检修系统的模板目录
-tcg_templates = Jinja2Templates(directory="../../tcg/templates")
+
+# 添加检修系统的模板目录（如果存在）
+if os.path.exists("../../tcg/templates"):
+    tcg_templates = Jinja2Templates(directory="../../tcg/templates")
+else:
+    # 如果模板目录不存在，使用前端模板替代
+    tcg_templates = templates
 
 # 检修系统工具函数
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -3398,18 +3411,31 @@ async def startup_event():
     load_tasks()
     load_maintenance_records()
     load_flights()
-    load_airports()  # 加载机场数据
+    load_airport_data()  # 加载机场数据
     load_blockchain_events()
     initialize_blockchain()
     ensure_users_have_keys()
 
 app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
-app.mount("/PICTURES", StaticFiles(directory="../PICTURES"), name="PICTURES")
-# 挂载检修系统的静态文件
-app.mount("/tcg/static", StaticFiles(directory="../../tcg/static"), name="tcg_static")
+
+# 如果PICTURES目录存在，则挂载它
+if os.path.exists("../PICTURES"):
+    app.mount("/PICTURES", StaticFiles(directory="../PICTURES"), name="PICTURES")
+else:
+    print("警告: ../PICTURES 目录不存在，将跳过挂载")
+
+# 挂载检修系统的静态文件（如果存在）
+if os.path.exists("../../tcg/static"):
+    app.mount("/tcg/static", StaticFiles(directory="../../tcg/static"), name="tcg_static")
+
 templates = Jinja2Templates(directory="../frontend")
-# 添加检修系统的模板目录
-tcg_templates = Jinja2Templates(directory="../../tcg/templates")
+
+# 添加检修系统的模板目录（如果存在）
+if os.path.exists("../../tcg/templates"):
+    tcg_templates = Jinja2Templates(directory="../../tcg/templates")
+else:
+    # 如果模板目录不存在，使用前端模板替代
+    tcg_templates = templates
 
 # 检修系统工具函数
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -4766,3 +4792,39 @@ async def contract_get_subchain_blocks(aircraft_registration: str):
         import traceback
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"error": "获取子链区块失败: " + str(e)})
+
+
+# ========== 权限管理API ==========
+
+@app.get("/api/permissions/role")
+async def get_role_permissions(request: Request):
+    """获取指定角色的权限列表"""
+    role = request.query_params.get('role', 'user')
+    permissions = permission_manager.get_role_permissions(role)
+    return JSONResponse(status_code=200, content={
+        "role": role,
+        "permissions": permissions
+    })
+
+@app.get("/api/permissions/check")
+async def check_permission(request: Request):
+    """检查用户是否有指定权限"""
+    token = request.cookies.get('access_token')
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "未登录"})
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_role = payload.get('role', 'user')
+        return JSONResponse(status_code=200, content={
+            "role": user_role,
+            "authorized": True
+        })
+    except JWTError:
+        return JSONResponse(status_code=401, content={"error": "令牌无效"})
+
+
+# 启动应用
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
