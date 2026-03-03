@@ -3309,8 +3309,12 @@ async def complete_task(request: Request):
                     print(f"[DEBUG] 保存到区块链异常: {e}")
                     import traceback
                     traceback.print_exc()
-        else:
-            print(f"[DEBUG] 区块链系统未初始化，仅保存到文件")
+            else:
+                print(f"[DEBUG] 区块链系统未初始化，仅保存到文件")
+        except Exception as e:
+            print(f"[ERROR] 创建维修记录异常: {e}")
+            import traceback
+            traceback.print_exc()
         
         # 更新任务状态为已完成
         task["status"] = "completed"
@@ -4750,33 +4754,15 @@ async def contract_get_subchain_blocks(aircraft_registration: str):
         subchain_info = aircraft_subchains.get(aircraft_registration)
         
         if not subchain_info:
-        {
-            "request": request, 
-            "current_user": current_user,
-            "error": error
-        }
-    )
-
-
-# ========== 权限管理API ==========
-
-@app.get("/api/permissions/role")
-async def get_role_permissions(request: Request):
-    """获取指定角色的权限列表"""
-    role = request.query_params.get('role', 'user')
-    permissions = permission_manager.get_role_permissions(role)
-    return JSONResponse(status_code=200, content={
-        "role": role,
-        "permissions": permissions
-    })
-
-@app.get("/api/permissions/check")
-async def check_permission(request: Request):
-    """检查用户是否有指定权限"""
-    token = request.cookies.get('access_token')
-    if not token:
-        return JSONResponse(status_code=401, content={"error": "未登录"})
-    
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_role = payload.get('role', 'user')
+            return JSONResponse(status_code=404, content={"error": "指定飞机的子链不存在"})
+        
+        # 获得子链地址并读取记录
+        subchain_address = subchain_info.get("subchain_address", "")
+        records = contract_engine.get_subchain_records(subchain_address)
+        
+        return JSONResponse(status_code=200, content={"records": records})
+    except Exception as e:
+        print(f"[ERROR] 获取子链区块失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": "获取子链区块失败: " + str(e)})
