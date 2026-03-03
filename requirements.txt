@@ -3,3 +3,4 @@ uvicorn
 websockets
 python-multipart
 jinja2
+python-jose[cryptography]
