@@ -802,6 +802,89 @@
             color: #718096;
         }
         
+        /* 航班列表表格样式 */
+        .flight-list {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .flight-list thead {
+            background: #f0f4f8;
+            border-bottom: 2px solid #d1d5db;
+        }
+        
+        .flight-list th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+            white-space: nowrap;
+            border-right: 1px solid #e2e8f0;
+        }
+        
+        .flight-list th:last-child {
+            border-right: none;
+        }
+        
+        .flight-list td {
+            padding: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            font-size: 14px;
+            color: #2d3748;
+        }
+        
+        .flight-list td:last-child {
+            border-right: none;
+        }
+        
+        .flight-list tbody tr:hover {
+            background: #f8fafc;
+        }
+        
+        .flight-number {
+            font-weight: 600;
+            color: #2b6cb0;
+            margin-bottom: 4px;
+        }
+        
+        .airline {
+            font-size: 13px;
+            color: #718096;
+        }
+        
+        .flight-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .flight-status.on-time {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .flight-status.delayed {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+        
+        .flight-status.cancelled {
+            background: #fecaca;
+            color: #991b1b;
+        }
+        
+        .flight-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-width: 280px;
+        }
+        
         /* 响应式设计 */
         @media (max-width: 768px) {
             .navbar {
@@ -1337,10 +1420,10 @@
                     <tr>
                         <td>
                             <div class="flight-number">${flight.flight_number}</div>
-                            <div class="airline">${flight.airline || '未知航空公司'}</div>
+                            <div class="airline">${formatAirlineName(flight.airline) || '未知航空公司'}</div>
                         </td>
-                        <td>${flight.departure_airport} (${flight.departure_city || ''})</td>
-                        <td>${flight.arrival_airport} (${flight.arrival_city || ''})</td>
+                        <td>${formatAirportDisplay(flight.departure_airport)}</td>
+                        <td>${formatAirportDisplay(flight.arrival_airport)}</td>
                         <td>${flight.departure_time || '未知'}</td>
                         <td>${flight.arrival_time || '未知'}</td>
                         <td>${flight.flight_date || '未知'}</td>
@@ -1981,18 +2064,18 @@
             
             const html = `
                 <div class="flight-detail-info">
-                    <h3>${flight.flight_number} - ${flight.airline || '未知航空公司'}</h3>
+                    <h3>${flight.flight_number} - ${formatAirlineName(flight.airline) || '未知航空公司'}</h3>
                     
                     <div class="detail-section">
                         <h4>航班信息</h4>
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <span class="detail-label">出发机场:</span>
-                                <span class="detail-value">${flight.departure_airport} (${flight.departure_city || ''})</span>
+                                <span class="detail-value">${formatAirportDisplay(flight.departure_airport)}</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">到达机场:</span>
-                                <span class="detail-value">${flight.arrival_airport} (${flight.arrival_city || ''})</span>
+                                <span class="detail-value">${formatAirportDisplay(flight.arrival_airport)}</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">出发时间:</span>
@@ -2062,7 +2145,7 @@
             }
         }
         
-        // 城市坐标数据
+        // 城市坐标数据（保留用于回退）
         const cityCoordinates = {
             '北京': [116.4074, 39.9042],
             '上海': [121.4737, 31.2304],
@@ -2109,6 +2192,70 @@
             '和田': [79.9265, 37.1733]
         };
         
+        // Helper to construct display text for airport label including code
+        function formatAirportDisplay(label) {
+            if (!label) return '';
+            let code = null;
+            if (window.AIRPORT_DATA && Array.isArray(window.AIRPORT_DATA)) {
+                const found = window.AIRPORT_DATA.find(a => {
+                    return a.name === label || a.code === label
+                        || (label.includes(a.name) || label.includes(a.code));
+                });
+                if (found) code = found.code;
+            }
+            if (code && !label.includes(code)) {
+                return `${label} (${code})`;
+            }
+            return label;
+        }
+        
+        // 简化航空公司名称，例如去掉“股份有限公司”等后缀
+        function formatAirlineName(name) {
+            if (!name) return '';
+            // remove common corporate suffixes
+            return name.replace(/股份有限公司|有限公司|公司|集团公司/, function(match) {
+                // keep 最小部分 if only one word remains
+                return match === '公司' ? '公司' : '公司';
+            });
+        }
+        
+        // 从 AIRPORT_DATA 构建机场坐标映射，优先使用机场经纬度
+        const airportCoordinates = {};
+        if (window.AIRPORT_DATA && Array.isArray(window.AIRPORT_DATA)) {
+            window.AIRPORT_DATA.forEach(a => {
+                if (a.lat != null && a.lon != null) {
+                    const coords = [a.lon, a.lat];
+                    if (a.name) airportCoordinates[a.name] = coords;
+                    if (a.code) airportCoordinates[a.code] = coords;
+                    // 也将去掉"国际机场"后缀的简化名称作为键
+                    if (a.name) {
+                        const short = a.name.replace(/国际机场$/,'');
+                        if (short !== a.name) airportCoordinates[short] = coords;
+                    }
+                }
+            });
+        }
+
+        // 查找给定机场标识的坐标（名称或代码），路径中包含则也能匹配
+        function getCoordsForAirport(label) {
+            if (!label) return null;
+            if (airportCoordinates[label]) return airportCoordinates[label];
+            // try exact match ignoring case
+            const lc = label.toLowerCase();
+            for (const key of Object.keys(airportCoordinates)) {
+                if (key.toLowerCase() === lc) return airportCoordinates[key];
+            }
+            // partial contains
+            for (const key of Object.keys(airportCoordinates)) {
+                if (label.includes(key) || key.includes(label)) {
+                    return airportCoordinates[key];
+                }
+            }
+            // fallback to city coordinate
+            if (cityCoordinates[label]) return cityCoordinates[label];
+            return null;
+        }
+        
         // 全局变量存储航班数据
         let allFlightData = [];
         let allCityData = [];
@@ -2133,24 +2280,28 @@
                 mapChartInstance = echarts.init(chartDom);
                 
                 flights.forEach(flight => {
-                    const departureCity = flight.departure_city;
-                    const arrivalCity = flight.arrival_city;
-                    
-                    if (cityCoordinates[departureCity] && cityCoordinates[arrivalCity]) {
-                        allCitySet.add(departureCity);
-                        allCitySet.add(arrivalCity);
-                        
+                    // try to resolve airport coordinates first
+                    const depLabel = flight.departure_airport || '';
+                    const arrLabel = flight.arrival_airport || '';
+                    const depCoords = getCoordsForAirport(depLabel);
+                    const arrCoords = getCoordsForAirport(arrLabel);
+
+                    if (depCoords && arrCoords) {
+                        // record names for legend (use labels)
+                        allCitySet.add(depLabel);
+                        allCitySet.add(arrLabel);
+
                         let color = '#38a169';
                         if (flight.status === '延误') {
                             color = '#dd6b20';
                         } else if (flight.status === '取消') {
                             color = '#e53e3e';
                         }
-                        
+
                         allFlightData.push({
-                            fromName: departureCity,
-                            toName: arrivalCity,
-                            coords: [cityCoordinates[departureCity], cityCoordinates[arrivalCity]],
+                            fromName: depLabel,
+                            toName: arrLabel,
+                            coords: [depCoords, arrCoords],
                             lineStyle: {
                                 color: color,
                                 width: 2,
@@ -2164,11 +2315,12 @@
                     }
                 });
                 
-                allCitySet.forEach(city => {
-                    if (cityCoordinates[city]) {
+                allCitySet.forEach(name => {
+                    const coords = getCoordsForAirport(name);
+                    if (coords) {
                         allCityData.push({
-                            name: city,
-                            value: cityCoordinates[city]
+                            name: name,
+                            value: coords
                         });
                     }
                 });
@@ -2226,11 +2378,12 @@
             }
             
             const filteredCityData = [];
-            filteredCitySet.forEach(city => {
-                if (cityCoordinates[city]) {
+            filteredCitySet.forEach(name => {
+                const coords = getCoordsForAirport(name);
+                if (coords) {
                     filteredCityData.push({
-                        name: city,
-                        value: cityCoordinates[city]
+                        name: name,
+                        value: coords
                     });
                 }
             });
@@ -2311,8 +2464,9 @@
                         rippleEffect: {
                             brushType: 'stroke'
                         },
+                        // hide airport/city name labels on the map
                         label: {
-                            show: true,
+                            show: false,
                             formatter: '{b}',
                             position: 'right',
                             fontSize: 10
