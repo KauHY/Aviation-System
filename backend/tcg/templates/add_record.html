@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加检修记录 - 民航飞机检修记录系统</title>
+    <link rel="stylesheet" href="/tcg/static/styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <a href="/tcg" class="logo">民航飞机检修记录系统</a>
+                <ul class="nav-links">
+                    <li><a href="/tcg">首页</a></li>
+                    <li><a href="/tcg/add-record">添加记录</a></li>
+                    <li><a href="/tcg/search">查询记录</a></li>
+                    <li><a href="/tcg/blockchain">区块链</a></li>
+                    {% if current_user and current_user.is_admin %}
+                        <li><a href="/tcg/users">用户管理</a></li>
+                    {% endif %}
+                    {% if current_user %}
+                        <li class="user-info">
+                            <span>欢迎，{{ current_user.name }}</span>
+                            <a href="/logout">退出</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="card" style="animation: fadeIn 0.8s ease-out;">
+                <h2>添加检修记录</h2>
+                
+                {% if success %}
+                    <div class="alert alert-success">
+                        {{ success }}<br>
+                        记录ID: {{ record_id }}
+                    </div>
+                {% endif %}
+                
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                
+                <form action="/tcg/add-record" method="post">
+                    <div class="form-section" style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color);">
+                        <h3 style="color: var(--primary-color);">基本信息</h3>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="aircraft_reg_no" class="form-label">飞机注册号</label>
+                                <input type="text" id="aircraft_reg_no" name="aircraft_reg_no" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="aircraft_type" class="form-label">飞机型号</label>
+                                <input type="text" id="aircraft_type" name="aircraft_type" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="aircraft_series" class="form-label">飞机系列</label>
+                                <input type="text" id="aircraft_series" name="aircraft_series" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="aircraft_owner" class="form-label">飞机所有者</label>
+                                <input type="text" id="aircraft_owner" name="aircraft_owner" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="job_card_no" class="form-label">工卡号</label>
+                                <input type="text" id="job_card_no" name="job_card_no" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="task_type" class="form-label">任务类型</label>
+                                <input type="text" id="task_type" name="task_type" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="task_description" class="form-label">任务描述</label>
+                            <textarea id="task_description" name="task_description" class="form-control" rows="4" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="mechanic_id" class="form-label">机械师工号</label>
+                                <input type="text" id="mechanic_id" name="mechanic_id" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="mechanic_name" class="form-label">机械师姓名</label>
+                                <input type="text" id="mechanic_name" name="mechanic_name" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="work_end_time" class="form-label">工作结束时间</label>
+                                <input type="datetime-local" id="work_end_time" name="work_end_time" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="hours_accumulated" class="form-label">累计工时</label>
+                                <input type="number" id="hours_accumulated" name="hours_accumulated" step="0.1" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="manpower_required" class="form-label">所需人力</label>
+                            <input type="number" id="manpower_required" name="manpower_required" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section" style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color);">
+                        <h3 style="color: var(--primary-color);">故障信息</h3>
+                        <div class="form-group">
+                            <label for="fault_description" class="form-label">故障描述</label>
+                            <textarea id="fault_description" name="fault_description" class="form-control" rows="4"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label for="fault_location" class="form-label">故障位置</label>
+                                <input type="text" id="fault_location" name="fault_location" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="fault_cause" class="form-label">故障原因</label>
+                            <textarea id="fault_cause" name="fault_cause" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="fault_handling_method" class="form-label">故障处理方法</label>
+                            <textarea id="fault_handling_method" name="fault_handling_method" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">提交记录</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 民航飞机检修记录系统</p>
+        </div>
+    </footer>
+</body>
+</html>

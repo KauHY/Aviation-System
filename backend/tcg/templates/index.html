@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>民航飞机检修记录系统</title>
+    <link rel="stylesheet" href="/tcg/static/styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <a href="/tcg" class="logo">民航飞机检修记录系统</a>
+                <ul class="nav-links">
+                    <li><a href="/">返回视频系统</a></li>
+                    <li><a href="/tcg">首页</a></li>
+                    <li><a href="/tcg/add-record">添加记录</a></li>
+                    <li><a href="/tcg/search">查询记录</a></li>
+                    <li><a href="/tcg/blockchain">区块链</a></li>
+                    {% if current_user and current_user.is_admin %}
+                        <li><a href="/tcg/users">用户管理</a></li>
+                    {% endif %}
+                    {% if current_user %}
+                        <li class="user-info">
+                            <span>欢迎，{{ current_user.name }}</span>
+                            <a href="/logout">退出</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="background: linear-gradient(rgba(43, 108, 176, 0.8), rgba(43, 108, 176, 0.9)), url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=civil%20aviation%20aircraft%20maintenance%20hangar%20with%20professional%20technicians%20working%20on%20airplane&image_size=landscape_16_9'); background-size: cover; background-position: center; color: white; padding: 6rem 0; text-align: center;">
+        <div class="container">
+            <h1 style="font-size: 2.8rem; margin-bottom: 1.5rem; animation: fadeIn 1s ease-out;">民航飞机检修记录存证系统</h1>
+            <p style="font-size: 1.3rem; margin-bottom: 2.5rem; animation: fadeIn 1s ease-out 0.3s both;">高效、安全地管理飞机检修记录</p>
+                <a href="/tcg/add-record" class="btn btn-primary" style="animation: fadeIn 1s ease-out 0.6s both;">添加记录</a>
+                <a href="/tcg/search" class="btn btn-secondary" style="margin-left: 1rem; animation: fadeIn 1s ease-out 0.8s both;">查询记录</a>
+        </div>
+    </section>
+
+    <section class="features" style="padding: 4rem 0;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 3rem; color: var(--primary-color); font-size: 2.2rem; animation: fadeIn 1s ease-out;">系统功能</h2>
+            <div class="dashboard">
+                <div class="dashboard-card fade-in">
+                    <h3>记录管理</h3>
+                    <p>便捷地录入和管理飞机检修记录，包括基本信息、故障信息、零件使用等。</p>
+                </div>
+                <div class="dashboard-card fade-in" style="animation-delay: 0.2s;">
+                    <h3>多维度查询</h3>
+                    <p>支持按记录ID、飞机注册号、工卡号、机械师工号等多种方式查询记录。</p>
+                </div>
+                <div class="dashboard-card fade-in" style="animation-delay: 0.4s;">
+                    <h3>签名流程</h3>
+                    <p>完整的签名流程，包括工作者、互检、必检、放行签名，确保记录的真实性。</p>
+                </div>
+                <div class="dashboard-card fade-in" style="animation-delay: 0.6s;">
+                    <h3>用户管理</h3>
+                    <p>管理员可以授权和管理用户，确保系统的安全性。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 民航飞机检修记录系统</p>
+        </div>
+    </footer>
+</body>
+</html>

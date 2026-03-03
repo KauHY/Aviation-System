@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>区块链可视化 - 民航飞机检修记录系统</title>
+    <link rel="stylesheet" href="/tcg/static/styles.css">
+    <style>
+        .blockchain-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+        
+        .block {
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            background-color: white;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .block:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .block::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -20px;
+            width: 2px;
+            height: 20px;
+            background-color: var(--primary-color);
+            transform: translateX(-50%);
+        }
+        
+        .block:last-child::before {
+            display: none;
+        }
+        
+        .block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .block-index {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .block-hash {
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            background-color: var(--background-light);
+            padding: 0.5rem;
+            border-radius: 4px;
+            max-width: 400px;
+            word-break: break-all;
+        }
+        
+        .block-body {
+            margin-top: 1rem;
+        }
+        
+        .block-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-item {
+            background-color: var(--background-light);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-value {
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        
+        .record-info {
+            background-color: rgba(99, 179, 237, 0.05);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .record-info h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .record-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .detail-item {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .detail-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+        
+        .detail-value {
+            font-weight: 500;
+        }
+        
+        .signature-list {
+            margin-top: 1rem;
+        }
+        
+        .signature-item {
+            background-color: white;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .signature-name {
+            font-weight: 500;
+        }
+        
+        .signature-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .timestamp {
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(43, 108, 176, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(43, 108, 176, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(43, 108, 176, 0);
+            }
+        }
+        
+        .block.genesis {
+            border-color: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+        
+        .block.genesis::before {
+            background-color: var(--success-color);
+        }
+        
+        .block.genesis .block-index {
+            color: var(--success-color);
+        }
+        
+        @media (max-width: 768px) {
+            .block-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .block-hash {
+                max-width: 100%;
+            }
+            
+            .block-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .record-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <a href="/tcg" class="logo">民航飞机检修记录系统</a>
+                <ul class="nav-links">
+                    <li><a href="/tcg">首页</a></li>
+                    <li><a href="/tcg/add-record">添加记录</a></li>
+                    <li><a href="/tcg/search">查询记录</a></li>
+                    <li><a href="/tcg/blockchain">区块链</a></li>
+                    {% if current_user and current_user.is_admin %}
+                        <li><a href="/tcg/users">用户管理</a></li>
+                    {% endif %}
+                    {% if current_user %}
+                        <li class="user-info">
+                            <span>欢迎，{{ current_user.name }}</span>
+                            <a href="/logout">退出</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="card" style="animation: fadeIn 0.8s ease-out;">
+                <h2>区块链可视化</h2>
+                <p class="text-muted">查看所有检修记录的区块链存证</p>
+            </div>
+            
+            <div class="blockchain-container">
+                {% if blockchain %}
+                    {% for block in blockchain %}
+                        <div class="block {% if block.index == 0 %}genesis{% endif %}">
+                            <div class="block-header">
+                                <div class="block-index">区块 #{{ block.index }}</div>
+                                <div class="block-hash">{{ block.hash[:40] }}...</div>
+                            </div>
+                            
+                            <div class="block-body">
+                                <div class="block-info">
+                                    <div class="info-item">
+                                        <div class="info-label">时间戳</div>
+                                        <div class="info-value timestamp">{{ block.timestamp }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">前区块哈希</div>
+                                        <div class="info-value">{{ block.previous_hash[:40] }}...</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="record-info">
+                                    <h4>检修记录</h4>
+                                    <div class="record-details">
+                                        <div class="detail-item">
+                                            <div class="detail-label">记录ID</div>
+                                            <div class="detail-value">{{ block.record.recordId[:20] }}...</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">飞机注册号</div>
+                                            <div class="detail-value">{{ block.record.aircraftRegNo }}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">飞机型号</div>
+                                            <div class="detail-value">{{ block.record.aircraftType }}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">工作类型</div>
+                                            <div class="detail-value">{{ block.record.workType }}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">位置</div>
+                                            <div class="detail-value">{{ block.record.location }}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">状态</div>
+                                            <div class="detail-value">
+                                                {% if block.record.status == 'Released' %}
+                                                    <span class="status-badge status-success">已完成</span>
+                                                {% elif block.record.status == 'Pending' %}
+                                                    <span class="status-badge status-warning">待签名</span>
+                                                {% else %}
+                                                    <span class="status-badge status-error">{{ block.record.status }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if block.record.signatures %}
+                                        <div class="signature-list">
+                                            <h5 style="margin-top: 1.5rem; margin-bottom: 1rem; color: var(--primary-color);">签名信息</h5>
+                                            <div class="detail-item">
+                                                <div class="detail-label">执行人员</div>
+                                                <div class="detail-value">{{ block.record.signatures.performedByName }} ({{ block.record.signatures.performedById }})</div>
+                                            </div>
+                                            
+                                            {% if block.record.signatures.peerChecks %}
+                                                {% for peer_check in block.record.signatures.peerChecks %}
+                                                    <div class="signature-item">
+                                                        <div class="signature-name">互检: {{ peer_check.name }} ({{ peer_check.id }})</div>
+                                                        <div class="signature-time">时间: {{ peer_check.time }}</div>
+                                                    </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            
+                                            {% if block.record.signatures.releasedByName %}
+                                                <div class="signature-item">
+                                                    <div class="signature-name">放行: {{ block.record.signatures.releasedByName }} ({{ block.record.signatures.releasedById }})</div>
+                                                    <div class="signature-time">时间: {{ block.record.signatures.releaseTime }}</div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="block">
+                        <div class="block-header">
+                            <div class="block-index">暂无区块</div>
+                        </div>
+                        <div class="block-body">
+                            <p style="text-align: center; color: var(--text-muted); padding: 2rem;">区块链为空，请先添加检修记录</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 民航飞机检修记录系统</p>
+        </div>
+    </footer>
+    
+    <script>
+        // 为每个区块添加点击事件，展开/折叠详情
+        document.querySelectorAll('.block').forEach(block => {
+            block.addEventListener('click', function() {
+                const body = this.querySelector('.block-body');
+                if (body) {
+                    body.style.display = body.style.display === 'none' ? 'block' : 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

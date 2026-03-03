@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>查询检修记录 - 民航飞机检修记录系统</title>
+    <link rel="stylesheet" href="/tcg/static/styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <a href="/tcg" class="logo">民航飞机检修记录系统</a>
+                <ul class="nav-links">
+                    <li><a href="/tcg">首页</a></li>
+                    <li><a href="/tcg/add-record">添加记录</a></li>
+                    <li><a href="/tcg/search">查询记录</a></li>
+                    <li><a href="/tcg/blockchain">区块链</a></li>
+                    {% if current_user and current_user.is_admin %}
+                        <li><a href="/tcg/users">用户管理</a></li>
+                    {% endif %}
+                    {% if current_user %}
+                        <li class="user-info">
+                            <span>欢迎，{{ current_user.name }}</span>
+                            <a href="/logout">退出</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="card" style="animation: fadeIn 0.8s ease-out;">
+                <h2>查询检修记录</h2>
+                
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                
+                <form action="/tcg/search" method="post" style="margin-bottom: 2rem; padding: 1.5rem; background-color: rgba(99, 179, 237, 0.05); border-radius: 8px;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                            <label for="search_type" class="form-label">查询方式</label>
+                            <select id="search_type" name="search_type" class="form-control" required>
+                                <option value="record_id" {% if search_type == 'record_id' %}selected{% endif %}>按记录ID查询</option>
+                                <option value="aircraft" {% if search_type == 'aircraft' %}selected{% endif %}>按飞机注册号查询</option>
+                                <option value="job_card" {% if search_type == 'job_card' %}selected{% endif %}>按工卡号查询</option>
+                                <option value="mechanic" {% if search_type == 'mechanic' %}selected{% endif %}>按机械师工号查询</option>
+                                <option value="all" {% if search_type == 'all' %}selected{% endif %}>查看所有记录</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 2; min-width: 300px;">
+                            <label for="search_value" class="form-label">查询值</label>
+                            <input type="text" id="search_value" name="search_value" value="{{ search_value }}" {% if search_type != 'all' %}required{% endif %} placeholder="请输入查询值" class="form-control">
+                        </div>
+                        <div class="form-group" style="flex: 0 0 120px; display: flex; align-items: flex-end;">
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">查询</button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="records-list">
+                    <h3 style="color: var(--primary-color); margin-bottom: 1.5rem;">查询结果</h3>
+                    {% if records %}
+                        <div class="table-container" style="overflow-x: auto; box-shadow: var(--shadow-sm); border-radius: 8px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>记录ID</th>
+                                        <th>飞机注册号</th>
+                                        <th>飞机型号</th>
+                                        <th>工卡号</th>
+                                        <th>任务类型</th>
+                                        <th>机械师</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in records %}
+                                        <tr>
+                                            <td>{{ record.recordId[:20] }}...</td>
+                                            <td>{{ record.aircraftRegNo }}</td>
+                                            <td>{{ record.aircraftType }}</td>
+                                            <td>{{ record.jobCardNo }}</td>
+                                            <td>{{ record.workType }}</td>
+                                            <td>{{ record.signatures.performedByName }}</td>
+                                            <td>
+                                                {% if record.status == 'Released' %}
+                                                    <span class="status-badge status-success">已完成</span>
+                                                {% elif record.status == 'Pending' %}
+                                                    <span class="status-badge status-warning">待签名</span>
+                                                {% else %}
+                                                    <span class="status-badge status-error">{{ record.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td style="display: flex; gap: 0.5rem; flex-direction: column;">
+                                                <a href="/tcg/record/{{ record.recordId }}" class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.5rem; text-align: center;">查看详情</a>
+                                                {% if current_user %}
+                                                    <a href="/tcg/signature/{{ record.recordId }}" class="btn btn-primary" style="font-size: 0.875rem; padding: 0.5rem; text-align: center;">签名</a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="card" style="text-align: center; padding: 3rem; background-color: rgba(226, 232, 240, 0.5);">
+                            {% if search_type %}
+                                <p style="font-size: 1.1rem; color: var(--text-light);">未找到相关记录</p>
+                            {% else %}
+                                <p style="font-size: 1.1rem; color: var(--text-light);">请输入查询条件</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 民航飞机检修记录系统</p>
+        </div>
+    </footer>
+</body>
+</html>

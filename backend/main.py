@@ -24,7 +24,7 @@ from contracts.signature_manager import SignatureManager
 from contracts.base_contract import BaseContract
 
 # 添加检修系统的后端目录到Python路径
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../tcg/backend'))
+sys.path.append(os.path.join(os.path.dirname(__file__), './tcg/backend'))
 
 # 导入检修系统的模块
 try:
@@ -175,14 +175,14 @@ else:
     print("警告: ../PICTURES 目录不存在，将跳过挂载")
 
 # 挂载检修系统的静态文件（如果存在）
-if os.path.exists("../../tcg/static"):
-    app.mount("/tcg/static", StaticFiles(directory="../../tcg/static"), name="tcg_static")
+if os.path.exists("./tcg/static"):
+    app.mount("/tcg/static", StaticFiles(directory="./tcg/static"), name="tcg_static")
 
 templates = Jinja2Templates(directory="../frontend")
 
 # 添加检修系统的模板目录（如果存在）
-if os.path.exists("../../tcg/templates"):
-    tcg_templates = Jinja2Templates(directory="../../tcg/templates")
+if os.path.exists("./tcg/templates"):
+    tcg_templates = Jinja2Templates(directory="./tcg/templates")
 else:
     # 如果模板目录不存在，使用前端模板替代
     tcg_templates = templates
@@ -3425,14 +3425,14 @@ else:
     print("警告: ../PICTURES 目录不存在，将跳过挂载")
 
 # 挂载检修系统的静态文件（如果存在）
-if os.path.exists("../../tcg/static"):
-    app.mount("/tcg/static", StaticFiles(directory="../../tcg/static"), name="tcg_static")
+if os.path.exists("./tcg/static"):
+    app.mount("/tcg/static", StaticFiles(directory="./tcg/static"), name="tcg_static")
 
 templates = Jinja2Templates(directory="../frontend")
 
 # 添加检修系统的模板目录（如果存在）
-if os.path.exists("../../tcg/templates"):
-    tcg_templates = Jinja2Templates(directory="../../tcg/templates")
+if os.path.exists("./tcg/templates"):
+    tcg_templates = Jinja2Templates(directory="./tcg/templates")
 else:
     # 如果模板目录不存在，使用前端模板替代
     tcg_templates = templates
