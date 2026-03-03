@@ -11,18 +11,36 @@
     <!-- 引入离线航司数据 -->
     <script src="/static/airlines.js"></script>
     <script>
-        // 动态加载中国地图数据
-        fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
-            .then(response => response.json())
-            .then(chinaJson => {
+        // 加载中国地图数据（仅使用本地静态文件，避免云端外链不稳定）
+        window.chinaMapLoaded = false;
+        window.chinaMapLoadError = '';
+        window.chinaMapLoadingPromise = null;
+
+        async function loadChinaMapOnce() {
+            const url = '/static/china-map.json';
+
+            try {
+                const response = await fetch(url, { cache: 'no-cache' });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const chinaJson = await response.json();
                 echarts.registerMap('china', chinaJson);
                 window.chinaMapLoaded = true;
-                console.log('中国地图数据加载成功');
-            })
-            .catch(error => {
-                console.error('加载中国地图数据失败:', error);
-                window.chinaMapLoaded = false;
-            });
+                window.chinaMapLoadError = '';
+                console.log('中国地图数据加载成功，来源:', url);
+                return true;
+            } catch (error) {
+                console.warn('本地地图加载失败:', url, error);
+                window.chinaMapLoadError = `${url} -> ${error.message || error}`;
+            }
+
+            window.chinaMapLoaded = false;
+            return false;
+        }
+
+        window.chinaMapLoadingPromise = loadChinaMapOnce();
     </script>
     <style>
         /* 页面容器 */
@@ -2261,11 +2279,32 @@
         let allCityData = [];
         let allCitySet = new Set();
         let mapChartInstance = null;
+
+        async function ensureChinaMapReady() {
+            if (window.chinaMapLoaded) return true;
+            if (!window.chinaMapLoadingPromise) {
+                window.chinaMapLoadingPromise = loadChinaMapOnce();
+            }
+
+            try {
+                return await window.chinaMapLoadingPromise;
+            } catch (_) {
+                return false;
+            }
+        }
         
         // 显示航班地图
         async function showFlightMap() {
             try {
+                const mapReady = await ensureChinaMapReady();
+                if (!mapReady) {
+                    throw new Error(`中国地图数据加载失败（可能被外网策略拦截）。最后错误：${window.chinaMapLoadError || '未知错误'}`);
+                }
+
                 const response = await fetch('/api/flights');
+                if (!response.ok) {
+                    throw new Error(`/api/flights 请求失败: HTTP ${response.status}`);
+                }
                 const result = await response.json();
                 const flights = result.flights || [];
                 
@@ -2355,7 +2394,7 @@
                 
             } catch ( error) {
                 console.error('加载航班地图失败:', error);
-                alert('加载航班地图失败，请稍后重试');
+                alert(`加载航班地图失败：${error.message || '请稍后重试'}`);
             }
         }
         
