@@ -168,12 +168,6 @@ async def startup_event():
 
 app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
 
-# 如果PICTURES目录存在，则挂载它
-if os.path.exists("../PICTURES"):
-    app.mount("/PICTURES", StaticFiles(directory="../PICTURES"), name="PICTURES")
-else:
-    print("警告: ../PICTURES 目录不存在，将跳过挂载")
-
 # 挂载检修系统的静态文件（如果存在）
 if os.path.exists("./tcg/static"):
     app.mount("/tcg/static", StaticFiles(directory="./tcg/static"), name="tcg_static")
@@ -3417,12 +3411,6 @@ async def startup_event():
     ensure_users_have_keys()
 
 app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
-
-# 如果PICTURES目录存在，则挂载它
-if os.path.exists("../PICTURES"):
-    app.mount("/PICTURES", StaticFiles(directory="../PICTURES"), name="PICTURES")
-else:
-    print("警告: ../PICTURES 目录不存在，将跳过挂载")
 
 # 挂载检修系统的静态文件（如果存在）
 if os.path.exists("./tcg/static"):
