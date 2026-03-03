@@ -335,6 +335,10 @@ manager = ConnectionManager()
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/favicon.ico")
+async def favicon():
+    return RedirectResponse(url="/static/logo.svg")
+
 @app.get("/login")
 async def login_page(request: Request):
     """登录页面"""
