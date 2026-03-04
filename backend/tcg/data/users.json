@@ -41,5 +41,12 @@
     "employee_id": "EMP8d148610",
     "password": "qwer1234",
     "is_admin": false
+  },
+  "0xd25c36b8fddd07970188715f91bc246dfd4877b3": {
+    "address": "0xd25c36b8fddd07970188715f91bc246dfd4877b3",
+    "name": "RAN",
+    "employee_id": "EMPfd4877b3",
+    "password": "123456",
+    "is_admin": false
   }
 }

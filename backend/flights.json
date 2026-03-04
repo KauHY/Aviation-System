@@ -148,5 +148,50 @@
     "aircraft_registration": "B6324",
     "status": "正常",
     "id": "3e031f49-757c-49b2-823e-3d795d363139"
+  },
+  {
+    "flight_number": "CI882",
+    "airline": "台湾中华航空股份有限公司",
+    "departure_airport": "大庆萨尔图",
+    "departure_city": "大庆",
+    "arrival_airport": "连江北竿",
+    "arrival_city": "连江",
+    "departure_time": "10:30",
+    "arrival_time": "14:20",
+    "flight_date": "2026-03-05",
+    "aircraft_type": "Airbus A350-900",
+    "aircraft_registration": "B12437",
+    "status": "延误",
+    "id": "fe12e4dc-da73-41c2-b5f7-0395ea4741c7"
+  },
+  {
+    "flight_number": "B7113",
+    "airline": "台湾立荣航空股份有限公司",
+    "departure_airport": "台中清泉岗",
+    "departure_city": "台中",
+    "arrival_airport": "花莲",
+    "arrival_city": "花莲",
+    "departure_time": "12:30",
+    "arrival_time": "13:10",
+    "flight_date": "2026-02-13",
+    "aircraft_type": "Airbus A320-200",
+    "aircraft_registration": "B37463",
+    "status": "取消",
+    "id": "9a3802e0-7cb2-480b-9ac5-c51073224de4"
+  },
+  {
+    "flight_number": "CA19",
+    "airline": "中国国际航空股份有限公司",
+    "departure_airport": "厦门高崎",
+    "departure_city": "厦门",
+    "arrival_airport": "金门尚义",
+    "arrival_city": "金门",
+    "departure_time": "12:10",
+    "arrival_time": "12:30",
+    "flight_date": "2026-03-19",
+    "aircraft_type": "Comac C909",
+    "aircraft_registration": "B1297",
+    "status": "正常",
+    "id": "84ad4857-ea87-416e-97a7-3c462158c3c3"
   }
 ]

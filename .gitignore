@@ -72,3 +72,6 @@ PICTURES/
 *.tmp
 *.temp
 .cache/
+backend/flights.json
+backend/users.json
+backend/tcg/data/users.json
