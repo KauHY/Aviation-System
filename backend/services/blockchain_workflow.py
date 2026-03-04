@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from contracts.signature_manager import SignatureManager
+from contracts.aircraft_subchain_contract import AircraftSubchainContract
 
 
 class BlockchainWorkflow:
@@ -16,7 +17,9 @@ class BlockchainWorkflow:
         master_contract,
         blockchain_events: List[dict],
         save_maintenance_records,
-        save_blockchain_events
+        save_blockchain_events,
+        save_blockchain=None,
+        save_contracts=None
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         required_fields = [
             "aircraft_registration",
@@ -70,46 +73,88 @@ class BlockchainWorkflow:
                 if data["technician_id"] in users:
                     technician_info = users[data["technician_id"]]
 
+                technician_address = technician_info.get("address", "") if technician_info else ""
+                caller_role = technician_info.get("role", "technician") if technician_info else "technician"
+
                 result = contract_engine.execute_contract(
                     contract_address=master_contract.contract_address,
-                    method_name="addRecord",
+                    method_name="createRecord",
                     params={
-                        "record_id": record_id,
                         "aircraft_registration": data["aircraft_registration"],
-                        "aircraft_model": data.get("aircraft_model", ""),
-                        "aircraft_series": data.get("aircraft_series", ""),
-                        "aircraft_age": data.get("aircraft_age", ""),
                         "maintenance_type": data["maintenance_type"],
-                        "maintenance_description": data["maintenance_description"],
-                        "maintenance_duration": data.get("maintenance_duration", ""),
-                        "parts_used": data.get("parts_used", ""),
-                        "is_rii": data.get("is_rii", False),
-                        "technician_address": technician_info.get("address", "") if technician_info else "",
-                        "technician_name": data["technician_name"],
-                        "technician_public_key": public_pem,
-                        "caller_address": technician_info.get("address", "") if technician_info else "",
-                        "caller_role": technician_info.get("role", "technician") if technician_info else "technician"
+                        "description": data["maintenance_description"],
+                        "technician_address": technician_address,
+                        "caller_address": technician_address,
+                        "caller_role": caller_role
                     },
                     signature=signature,
-                    signer_address=technician_info.get("address", "") if technician_info else "",
+                    signer_address=technician_address,
                     nonce=str(int(datetime.now().timestamp())),
                     verify_signature_func=lambda sig, addr, params: {"success": True}
                 )
 
-                if result.get("success"):
+                contract_result = result.get("result", {}) if isinstance(result, dict) else {}
+
+                if result.get("success") and (not isinstance(contract_result, dict) or contract_result.get("success", True)):
+                    contract_record_id = ""
+                    if isinstance(contract_result, dict):
+                        contract_record_id = contract_result.get("record_id", "")
+
                     maintenance_records[record_id]["transaction_hash"] = result.get("transaction_hash", "")
                     maintenance_records[record_id]["block_number"] = result.get("block_index", 0)
                     maintenance_records[record_id]["blockchain_timestamp"] = int(datetime.now().timestamp())
+                    if contract_record_id and contract_record_id != record_id:
+                        maintenance_records[record_id]["contract_record_id"] = contract_record_id
                     save_maintenance_records()
+
+                    subchain_address = ""
+                    if isinstance(contract_result, dict):
+                        subchain_address = contract_result.get("subchain_address", "")
+
+                    if subchain_address:
+                        subchain_contract = contract_engine.get_contract(subchain_address)
+                        if not subchain_contract:
+                            subchain_contract = AircraftSubchainContract(
+                                subchain_address,
+                                data["aircraft_registration"],
+                                "未知",
+                                master_contract.contract_address
+                            )
+                            contract_engine.register_contract(subchain_contract)
+
+                        subchain_record_id = contract_record_id or record_id
+                        if subchain_record_id not in subchain_contract.state["records"]:
+                            now_ts = int(datetime.now().timestamp())
+                            subchain_contract.state["records"][subchain_record_id] = {
+                                "id": subchain_record_id,
+                                "maintenance_type": data["maintenance_type"],
+                                "description": data["maintenance_description"],
+                                "status": "pending",
+                                "technician_address": technician_address,
+                                "approver_address": "",
+                                "created_at": now_ts,
+                                "updated_at": now_ts,
+                                "block_index": result.get("block_index", 0),
+                                "master_record_id": contract_record_id or subchain_record_id,
+                                "aircraft_registration": data["aircraft_registration"]
+                            }
+                            subchain_contract.state["stats"]["total_records"] += 1
+                            subchain_contract.state["stats"]["pending_count"] += 1
+                            subchain_contract.state["stats"]["last_maintenance_date"] = now_ts
+
+                    if callable(save_blockchain):
+                        save_blockchain()
+                    if callable(save_contracts):
+                        save_contracts()
 
                     event_data = {
                         "event_name": "RecordCreated",
                         "contract_address": master_contract.contract_address,
                         "block_index": result.get("block_index", 0),
                         "data": {
-                            "record_id": record_id,
+                            "record_id": contract_record_id or record_id,
                             "aircraft_registration": data["aircraft_registration"],
-                            "subchain_address": result.get("subchain_address", ""),
+                            "subchain_address": subchain_address,
                             "maintenance_type": data["maintenance_type"],
                             "description": data["maintenance_description"],
                             "technician_address": technician_info.get("address", "") if technician_info else ""
@@ -118,6 +163,8 @@ class BlockchainWorkflow:
                     }
                     blockchain_events.append(event_data)
                     save_blockchain_events()
+                elif isinstance(contract_result, dict) and contract_result.get("success") is False:
+                    return None, "contract_error", contract_result.get("error", "合约执行失败")
             except Exception:
                 pass
 

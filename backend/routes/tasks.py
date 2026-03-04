@@ -1,13 +1,18 @@
+import uuid
+from datetime import datetime
+
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 from jose import JWTError, jwt
 
 import app_state
 from permission_manager import permission_manager, permission_audit, Permission, Role
+from services.blockchain_workflow import BlockchainWorkflow
 from services.task_workflow import TaskWorkflow
 
 router = APIRouter()
 task_workflow = TaskWorkflow()
+blockchain_workflow = BlockchainWorkflow()
 
 def _get_current_user_from_request(request: Request):
     token = request.cookies.get("access_token")
@@ -116,6 +121,166 @@ async def get_tasks(request: Request):
         "tasks": app_state.tasks
     })
 
+
+@router.post("/api/tasks")
+async def create_task(request: Request):
+    """创建检测任务"""
+    try:
+        permission_check = _ensure_permission(request, Permission.TASK_CREATE)
+        if isinstance(permission_check, JSONResponse):
+            return permission_check
+
+        data = await request.json()
+        required_fields = ["aircraft_registration", "task_type", "priority", "deadline"]
+        for field in required_fields:
+            if field not in data:
+                return JSONResponse(status_code=400, content={
+                    "success": False,
+                    "message": f"缺少必填字段: {field}"
+                })
+
+        new_task = {
+            "id": str(uuid.uuid4())[:12],
+            "aircraft_registration": data.get("aircraft_registration", ""),
+            "flight_number": data.get("aircraft_registration", ""),
+            "task_type": data.get("task_type", ""),
+            "priority": data.get("priority", "medium"),
+            "status": "pending",
+            "assignee_id": data.get("assignee_id") or None,
+            "deadline": data.get("deadline", "")
+        }
+
+        app_state.tasks.append(new_task)
+        app_state.save_tasks()
+
+        return JSONResponse(status_code=201, content={
+            "success": True,
+            "message": "任务创建成功",
+            "task": new_task
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "message": "创建任务失败: " + str(e)
+        })
+
+
+@router.get("/api/tasks/{task_id}")
+async def get_task(task_id: str, request: Request):
+    """获取单个任务详情"""
+    permission_check = _ensure_permission(request, Permission.TASK_VIEW)
+    if isinstance(permission_check, JSONResponse):
+        return permission_check
+
+    task = next((item for item in app_state.tasks if str(item.get("id")) == str(task_id)), None)
+    if not task:
+        return JSONResponse(status_code=404, content={
+            "success": False,
+            "message": "任务不存在"
+        })
+
+    return JSONResponse(status_code=200, content={
+        "success": True,
+        "task": task
+    })
+
+
+@router.put("/api/tasks/{task_id}")
+async def update_task(task_id: str, request: Request):
+    """更新任务"""
+    try:
+        permission_check = _ensure_permission(request, Permission.TASK_EDIT)
+        if isinstance(permission_check, JSONResponse):
+            return permission_check
+
+        data = await request.json()
+        task = next((item for item in app_state.tasks if str(item.get("id")) == str(task_id)), None)
+        if not task:
+            return JSONResponse(status_code=404, content={
+                "success": False,
+                "message": "任务不存在"
+            })
+
+        if "aircraft_registration" in data:
+            task["aircraft_registration"] = data["aircraft_registration"]
+            task["flight_number"] = data["aircraft_registration"]
+        if "task_type" in data:
+            task["task_type"] = data["task_type"]
+        if "priority" in data:
+            task["priority"] = data["priority"]
+        if "deadline" in data:
+            task["deadline"] = data["deadline"]
+
+        if "status" in data:
+            if data["status"] == "completed" and task.get("assignee_id"):
+                inspector = next(
+                    (item for item in app_state.inspectors if item.get("id") == task.get("assignee_id")),
+                    None
+                )
+                if inspector:
+                    inspector["status"] = "available"
+                    inspector["current_task"] = None
+            task["status"] = data["status"]
+
+        if "assignee_id" in data:
+            task["assignee_id"] = data["assignee_id"]
+
+        task["updated_at"] = int(datetime.now().timestamp())
+        app_state.save_tasks()
+
+        return JSONResponse(status_code=200, content={
+            "success": True,
+            "message": "任务更新成功",
+            "task": task
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "message": "更新任务失败: " + str(e)
+        })
+
+
+@router.delete("/api/tasks/{task_id}")
+async def delete_task(task_id: str, request: Request):
+    """删除任务"""
+    try:
+        permission_check = _ensure_permission(request, Permission.TASK_DELETE)
+        if isinstance(permission_check, JSONResponse):
+            return permission_check
+
+        task_index = next(
+            (index for index, item in enumerate(app_state.tasks) if str(item.get("id")) == str(task_id)),
+            None
+        )
+        if task_index is None:
+            return JSONResponse(status_code=404, content={
+                "success": False,
+                "message": "任务不存在"
+            })
+
+        task = app_state.tasks[task_index]
+        if task.get("assignee_id"):
+            inspector = next(
+                (item for item in app_state.inspectors if item.get("id") == task.get("assignee_id")),
+                None
+            )
+            if inspector:
+                inspector["status"] = "available"
+                inspector["current_task"] = None
+
+        app_state.tasks.pop(task_index)
+        app_state.save_tasks()
+
+        return JSONResponse(status_code=200, content={
+            "success": True,
+            "message": "任务删除成功"
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "message": "删除任务失败: " + str(e)
+        })
+
 # 分配检测任务
 @router.post("/api/tasks/assign")
 async def assign_task(request: Request):
@@ -214,4 +379,171 @@ async def complete_task(request: Request):
         return JSONResponse(status_code=500, content={
             "success": False,
             "message": "创建维修记录失败: " + str(e)
+        })
+
+
+@router.post("/api/maintenance")
+async def create_maintenance_record_from_task(request: Request):
+    """兼容旧版接口：从任务创建维修记录"""
+    try:
+        data = await request.json()
+
+        required_fields = [
+            "aircraft_registration",
+            "task_type",
+            "maintenance_type",
+            "fault_description",
+            "maintenance_measures",
+            "task_id"
+        ]
+        for field in required_fields:
+            if not data.get(field):
+                return JSONResponse(status_code=400, content={
+                    "success": False,
+                    "message": f"缺少必填字段: {field}"
+                })
+
+        task_id = str(data.get("task_id"))
+        task = next((item for item in app_state.tasks if str(item.get("id")) == task_id), None)
+        if not task:
+            return JSONResponse(status_code=404, content={
+                "success": False,
+                "message": "任务不存在"
+            })
+
+        current_user = _get_current_user_from_request(request)
+        if not current_user:
+            return JSONResponse(status_code=401, content={
+                "success": False,
+                "message": "未授权"
+            })
+
+        username = current_user.get("username") or ""
+        user_info = app_state.users.get(username, {}) if username else {}
+        technician_name = user_info.get("name") or username or "未知"
+
+        description_parts = [
+            str(data.get("fault_description", "")).strip(),
+            str(data.get("maintenance_measures", "")).strip()
+        ]
+        maintenance_description = "\n".join([item for item in description_parts if item])
+
+        workflow_data = {
+            "aircraft_registration": data.get("aircraft_registration", ""),
+            "maintenance_type": data.get("maintenance_type", ""),
+            "maintenance_date": datetime.now().strftime("%Y-%m-%d"),
+            "maintenance_description": maintenance_description,
+            "maintenance_duration": data.get("maintenance_duration", ""),
+            "parts_used": data.get("parts_used", ""),
+            "technician_name": technician_name,
+            "technician_id": username or technician_name
+        }
+
+        record_id, error_code, error_detail = blockchain_workflow.create_record(
+            data=workflow_data,
+            maintenance_records=app_state.maintenance_records,
+            tasks=app_state.tasks,
+            users=app_state.users,
+            contract_engine=app_state.contract_engine,
+            master_contract=app_state.master_contract,
+            blockchain_events=app_state.blockchain_events,
+            save_maintenance_records=app_state.save_maintenance_records,
+            save_blockchain_events=app_state.save_blockchain_events,
+            save_blockchain=app_state.save_blockchain,
+            save_contracts=app_state.save_contracts
+        )
+        if error_code == "missing_field":
+            return JSONResponse(status_code=400, content={
+                "success": False,
+                "message": f"缺少必填字段: {error_detail}"
+            })
+        if error_code:
+            return JSONResponse(status_code=500, content={
+                "success": False,
+                "message": "创建维修记录失败"
+            })
+
+        task["status"] = "completed"
+        task["updated_at"] = int(datetime.now().timestamp())
+        app_state.save_tasks()
+
+        return JSONResponse(status_code=200, content={
+            "success": True,
+            "message": "任务完成成功，维修记录已创建",
+            "record_id": record_id
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "message": "创建维修记录失败: " + str(e)
+        })
+
+
+@router.get("/api/aircraft-inspection/{registration}")
+async def get_aircraft_inspection_records(registration: str):
+    """兼容旧版接口：按飞机注册号查询检修记录"""
+    try:
+        aircraft_records = []
+        for record in app_state.maintenance_records.values():
+            if str(record.get("aircraft_registration", "")) != str(registration):
+                continue
+
+            aircraft_records.append({
+                "id": record.get("id", ""),
+                "title": record.get("maintenance_type", ""),
+                "description": record.get("maintenance_description", ""),
+                "date": record.get("maintenance_date", ""),
+                "status": "完成" if record.get("status") == "released" else "进行中",
+                "technician": record.get("technician_name", "未知")
+            })
+
+        return JSONResponse(status_code=200, content={
+            "success": True,
+            "records": aircraft_records
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "message": "获取检修记录失败: " + str(e)
+        })
+
+
+@router.get("/api/maintenance/records")
+async def get_maintenance_records(aircraft_type: str = None):
+    """兼容旧版接口：获取维修记录（支持机型筛选）"""
+    try:
+        records = []
+        query = (aircraft_type or "").strip().lower()
+
+        for record in app_state.maintenance_records.values():
+            record_aircraft_type = str(record.get("aircraft_type") or record.get("aircraft_model") or "")
+            record_registration = str(record.get("aircraft_registration") or "")
+
+            if query:
+                type_match = query in record_aircraft_type.lower()
+                registration_match = query in record_registration.lower()
+                if not type_match and not registration_match:
+                    continue
+
+            records.append({
+                "id": record.get("id", ""),
+                "maintenance_type": record.get("maintenance_type", ""),
+                "maintenance_description": record.get("maintenance_description", ""),
+                "maintenance_date": record.get("maintenance_date", ""),
+                "status": record.get("status", "pending"),
+                "technician_name": record.get("technician_name", "未知"),
+                "aircraft_registration": record_registration,
+                "aircraft_type": record_aircraft_type
+            })
+
+        records.sort(key=lambda item: item.get("maintenance_date") or "", reverse=True)
+
+        return JSONResponse(status_code=200, content={
+            "success": True,
+            "records": records
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "message": "获取维修记录失败: " + str(e)
         })

@@ -14,6 +14,26 @@ router = APIRouter()
 auth_workflow = AuthWorkflow()
 blockchain_workflow = BlockchainWorkflow()
 
+
+def _get_current_user_from_auth(request: Request):
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if not token:
+        token = request.cookies.get("access_token", "")
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, app_state.SECRET_KEY, algorithms=[app_state.ALGORITHM])
+    except Exception:
+        return None
+
+    return {
+        "address": payload.get("sub"),
+        "username": payload.get("username"),
+        "role": payload.get("role", "user"),
+        "public_key": payload.get("public_key", "")
+    }
+
 @router.post("/api/blockchain/records/create")
 async def create_maintenance_record(request: Request):
     """创建维修记录"""
@@ -28,7 +48,9 @@ async def create_maintenance_record(request: Request):
             master_contract=app_state.master_contract,
             blockchain_events=app_state.blockchain_events,
             save_maintenance_records=app_state.save_maintenance_records,
-            save_blockchain_events=app_state.save_blockchain_events
+            save_blockchain_events=app_state.save_blockchain_events,
+            save_blockchain=app_state.save_blockchain,
+            save_contracts=app_state.save_contracts
         )
         if error_code == "missing_field":
             return JSONResponse(status_code=400, content={"error": f"{error_detail} 不能为空"})
@@ -737,6 +759,167 @@ async def get_contract_info():
         return JSONResponse(status_code=500, content={"error": "获取合约信息失败: " + str(e)})
 
 
+@router.post("/api/contract/create-record")
+async def contract_create_record(request: Request):
+    """兼容旧版接口：使用智能合约创建维修记录"""
+    try:
+        if not app_state.contract_engine or not app_state.master_contract:
+            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
+
+        data = await request.json()
+        required_fields = ["aircraft_registration", "maintenance_type", "description", "technician_address", "signature", "nonce"]
+        for field in required_fields:
+            if not data.get(field):
+                return JSONResponse(status_code=400, content={"error": f"{field} 不能为空"})
+
+        current_user = _get_current_user_from_auth(request)
+        if not current_user:
+            return JSONResponse(status_code=401, content={"error": "未授权"})
+
+        timestamp = data.get("timestamp", int(datetime.now().timestamp()))
+        sign_data = SignatureManager.create_sign_data(
+            contract_address=app_state.master_contract.contract_address,
+            method="createRecord",
+            params={
+                "aircraft_registration": data["aircraft_registration"],
+                "maintenance_type": data["maintenance_type"],
+                "description": data["description"],
+                "technician_address": data["technician_address"]
+            },
+            timestamp=timestamp,
+            nonce=data["nonce"]
+        )
+
+        verification_result = SignatureManager.verify_signature(
+            data["signature"],
+            current_user.get("public_key", ""),
+            sign_data
+        )
+        if not verification_result.get("success"):
+            return JSONResponse(status_code=400, content={"error": "签名验证失败"})
+
+        result = app_state.contract_engine.execute_contract(
+            contract_address=app_state.master_contract.contract_address,
+            method_name="createRecord",
+            params={
+                "aircraft_registration": data["aircraft_registration"],
+                "maintenance_type": data["maintenance_type"],
+                "description": data["description"],
+                "technician_address": data["technician_address"],
+                "caller_address": current_user["address"],
+                "caller_role": current_user["role"]
+            },
+            signature=data["signature"],
+            signer_address=current_user["address"],
+            nonce=data["nonce"],
+            verify_signature_func=lambda sig, addr, params: verification_result
+        )
+        if not result.get("success"):
+            return JSONResponse(status_code=400, content={"error": result.get("error", "创建记录失败")})
+
+        app_state.save_blockchain()
+        app_state.save_contracts()
+
+        record_id = (result.get("result") or {}).get("record_id")
+        if record_id and record_id not in app_state.maintenance_records:
+            app_state.maintenance_records[record_id] = {
+                "id": record_id,
+                "aircraft_registration": data.get("aircraft_registration", ""),
+                "maintenance_type": data.get("maintenance_type", ""),
+                "maintenance_date": datetime.now().strftime("%Y-%m-%d"),
+                "maintenance_description": data.get("description", ""),
+                "status": "pending",
+                "technician_name": current_user.get("username", "未知"),
+                "technician_id": current_user.get("username", ""),
+                "created_at": int(datetime.now().timestamp()),
+                "updated_at": int(datetime.now().timestamp())
+            }
+            app_state.save_maintenance_records()
+
+        return JSONResponse(status_code=200, content={
+            "success": True,
+            "message": "维修记录创建成功",
+            "record_id": record_id,
+            "block_hash": result.get("block_hash"),
+            "block_index": result.get("block_index")
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": "创建记录失败: " + str(e)})
+
+
+@router.post("/api/contract/approve-record")
+async def contract_approve_record(request: Request):
+    """兼容旧版接口：使用智能合约审批维修记录"""
+    try:
+        if not app_state.contract_engine or not app_state.master_contract:
+            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
+
+        data = await request.json()
+        required_fields = ["record_id", "approver_address", "signature", "nonce"]
+        for field in required_fields:
+            if not data.get(field):
+                return JSONResponse(status_code=400, content={"error": f"{field} 不能为空"})
+
+        current_user = _get_current_user_from_auth(request)
+        if not current_user:
+            return JSONResponse(status_code=401, content={"error": "未授权"})
+
+        timestamp = data.get("timestamp", int(datetime.now().timestamp()))
+        sign_data = SignatureManager.create_sign_data(
+            contract_address=app_state.master_contract.contract_address,
+            method="approveRecord",
+            params={
+                "record_id": data["record_id"],
+                "approver_address": data["approver_address"]
+            },
+            timestamp=timestamp,
+            nonce=data["nonce"]
+        )
+
+        verification_result = SignatureManager.verify_signature(
+            data["signature"],
+            current_user.get("public_key", ""),
+            sign_data
+        )
+        if not verification_result.get("success"):
+            return JSONResponse(status_code=400, content={"error": "签名验证失败"})
+
+        result = app_state.contract_engine.execute_contract(
+            contract_address=app_state.master_contract.contract_address,
+            method_name="approveRecord",
+            params={
+                "record_id": data["record_id"],
+                "approver_address": data["approver_address"],
+                "caller_address": current_user["address"],
+                "caller_role": current_user["role"]
+            },
+            signature=data["signature"],
+            signer_address=current_user["address"],
+            nonce=data["nonce"],
+            verify_signature_func=lambda sig, addr, params: verification_result
+        )
+        if not result.get("success"):
+            return JSONResponse(status_code=400, content={"error": result.get("error", "审批记录失败")})
+
+        app_state.save_blockchain()
+        app_state.save_contracts()
+
+        record_id = data.get("record_id")
+        if record_id in app_state.maintenance_records:
+            app_state.maintenance_records[record_id]["status"] = "approved"
+            app_state.maintenance_records[record_id]["updated_at"] = int(datetime.now().timestamp())
+            app_state.save_maintenance_records()
+
+        return JSONResponse(status_code=200, content={
+            "success": True,
+            "message": "维修记录审批成功",
+            "block_hash": result.get("block_hash"),
+            "block_index": result.get("block_index")
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": "审批记录失败: " + str(e)})
+
+
 @router.post("/api/contract/release-record")
 async def contract_release_record(request: Request):
     """使用智能合约释放维修记录"""
@@ -894,6 +1077,47 @@ async def contract_get_blocks():
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": "获取区块失败: " + str(e)})
 
+
+@router.get("/api/contract/events")
+async def contract_get_events(contract_address: Optional[str] = None):
+    """兼容旧版接口：获取合约事件日志"""
+    try:
+        if not app_state.contract_engine:
+            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
+
+        if contract_address:
+            events = app_state.contract_engine.get_contract_events(contract_address)
+        else:
+            events = app_state.contract_engine.get_all_events()
+
+        for event in events:
+            signer_address = event.get("signer_address", "")
+            event["signer_name"] = "未知"
+            event["signer_role"] = "user"
+
+            for username, user_info in app_state.users.items():
+                if user_info.get("address") == signer_address:
+                    event["signer_name"] = user_info.get("name") or username
+                    event["signer_role"] = user_info.get("role", "user")
+                    break
+
+        return JSONResponse(status_code=200, content={"events": events})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": "获取事件失败: " + str(e)})
+
+
+@router.get("/api/contract/verify")
+async def contract_verify_blockchain():
+    """兼容旧版接口：验证区块链完整性"""
+    try:
+        if not app_state.contract_engine:
+            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
+
+        is_valid = app_state.contract_engine.verify_blockchain()
+        return JSONResponse(status_code=200, content={"valid": is_valid})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": "验证失败: " + str(e)})
+
 @router.get("/api/contract/subchains")
 async def contract_get_subchains():
     """获取飞机子链信息"""
@@ -948,6 +1172,26 @@ async def contract_get_subchain_blocks(aircraft_registration: str):
         # 获得子链地址并读取记录
         subchain_address = subchain_info.get("subchain_address", "")
         records = app_state.contract_engine.get_subchain_records(subchain_address)
+
+        if not records:
+            master_records = app_state.master_contract.state.get("records", {})
+            for record_id, record in master_records.items():
+                if record.get("aircraft_registration") != aircraft_registration:
+                    continue
+
+                records.append({
+                    "id": record.get("id", record_id),
+                    "maintenance_type": record.get("maintenance_type", ""),
+                    "description": record.get("description", ""),
+                    "status": record.get("status", "pending"),
+                    "technician_address": record.get("technician_address", ""),
+                    "approver_address": record.get("approver_address", ""),
+                    "created_at": record.get("created_at", 0),
+                    "updated_at": record.get("updated_at", 0),
+                    "block_index": record.get("block_index", 0),
+                    "master_record_id": record.get("id", record_id),
+                    "aircraft_registration": aircraft_registration
+                })
 
         return JSONResponse(status_code=200, content={"records": records})
     except Exception as e:

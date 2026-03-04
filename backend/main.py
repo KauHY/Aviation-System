@@ -11,6 +11,7 @@ from routes.flights import router as flights_router
 from routes.tasks import router as tasks_router
 from routes.inspection import router as inspection_router
 from routes.permissions import router as permissions_router
+from routes.video import router as video_router
 
 app = FastAPI()
 
@@ -46,6 +47,7 @@ app.include_router(flights_router)
 app.include_router(tasks_router)
 app.include_router(inspection_router)
 app.include_router(permissions_router)
+app.include_router(video_router)
 
 # 启动应用
 if __name__ == "__main__":
