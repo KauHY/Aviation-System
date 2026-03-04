@@ -7,151 +7,33 @@ from jose import jwt
 
 import app_state
 from contracts.signature_manager import SignatureManager
+from services.auth_workflow import AuthWorkflow
+from services.blockchain_workflow import BlockchainWorkflow
 
 router = APIRouter()
+auth_workflow = AuthWorkflow()
+blockchain_workflow = BlockchainWorkflow()
 
 @router.post("/api/blockchain/records/create")
 async def create_maintenance_record(request: Request):
     """创建维修记录"""
     try:
-        from cryptography.hazmat.primitives import hashes
-        from cryptography.hazmat.backends import default_backend
-        from cryptography.hazmat.primitives.asymmetric import padding
-        import uuid
-
         data = await request.json()
-
-        # 验证必填字段
-        required_fields = ['aircraft_registration', 'maintenance_type', 'maintenance_date', 'maintenance_description', 'technician_name', 'technician_id']
-        for field in required_fields:
-            if not data.get(field):
-                return JSONResponse(status_code=400, content={"error": f"{field} 不能为空"})
-
-        # 生成记录ID
-        record_id = str(uuid.uuid4())[:12]
-
-        # 简化创建流程，移除私钥验证
-        # 实际生产环境中应该保留私钥验证以确保安全性
-
-        # 生成样例公钥和签名
-        public_pem = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwH6f8f8f8f8f8f8f8f8f8\nf8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f\nf8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f8f\nfQIDAQAB\n-----END PUBLIC KEY-----"
-        signature = "sample_signature"
-
-        # 创建记录
-        app_state.maintenance_records[record_id] = {
-            "id": record_id,
-            "aircraft_registration": data['aircraft_registration'],
-            "aircraft_model": data.get('aircraft_model', ''),
-            "aircraft_series": data.get('aircraft_series', ''),
-            "aircraft_age": data.get('aircraft_age', ''),
-            "maintenance_type": data['maintenance_type'],
-            "maintenance_date": data['maintenance_date'],
-            "maintenance_description": data['maintenance_description'],
-            "maintenance_duration": data.get('maintenance_duration', ''),
-            "parts_used": data.get('parts_used', ''),
-            "is_rii": data.get('is_rii', False),
-            "technician_name": data['technician_name'],
-            "technician_id": data['technician_id'],
-            "technician_public_key": public_pem,
-            "signature": signature,
-            "status": "pending",
-            "created_at": int(datetime.now().timestamp()),
-            "updated_at": int(datetime.now().timestamp())
-        }
-
-        # 保存维修记录到文件
-        app_state.save_maintenance_records()
-
-        # 同步到区块链
-        try:
-            if app_state.contract_engine and app_state.master_contract:
-                # 获取技术人员信息
-                technician_info = None
-                if data['technician_id'] in app_state.users:
-                    technician_info = app_state.users[data['technician_id']]
-
-                # 调用智能合约创建记录
-                result = app_state.contract_engine.execute_contract(
-                    contract_address=app_state.master_contract.contract_address,
-                    method_name="addRecord",
-                    params={
-                        "record_id": record_id,
-                        "aircraft_registration": data['aircraft_registration'],
-                        "aircraft_model": data.get('aircraft_model', ''),
-                        "aircraft_series": data.get('aircraft_series', ''),
-                        "aircraft_age": data.get('aircraft_age', ''),
-                        "maintenance_type": data['maintenance_type'],
-                        "maintenance_description": data['maintenance_description'],
-                        "maintenance_duration": data.get('maintenance_duration', ''),
-                        "parts_used": data.get('parts_used', ''),
-                        "is_rii": data.get('is_rii', False),
-                        "technician_address": technician_info.get('address', '') if technician_info else '',
-                        "technician_name": data['technician_name'],
-                        "technician_public_key": public_pem,
-                        "caller_address": technician_info.get('address', '') if technician_info else '',
-                        "caller_role": technician_info.get('role', 'technician') if technician_info else 'technician'
-                    },
-                    signature=signature,
-                    signer_address=technician_info.get('address', '') if technician_info else '',
-                    nonce=str(int(datetime.now().timestamp())),
-                    verify_signature_func=lambda sig, addr, params: {"success": True}
-                )
-
-                if result.get("success"):
-                    print(f"[DEBUG] 记录 {record_id} 已同步到区块链")
-
-                    # 保存区块链信息到维修记录
-                    app_state.maintenance_records[record_id]["transaction_hash"] = result.get("transaction_hash", "")
-                    app_state.maintenance_records[record_id]["block_number"] = result.get("block_index", 0)
-                    app_state.maintenance_records[record_id]["blockchain_timestamp"] = int(datetime.now().timestamp())
-                    app_state.save_maintenance_records()
-
-                    # 手动添加创建事件到持久化存储
-                    event_data = {
-                        "event_name": "RecordCreated",
-                        "contract_address": app_state.master_contract.contract_address,
-                        "block_index": result.get("block_index", 0),
-                        "data": {
-                            "record_id": record_id,
-                            "aircraft_registration": data['aircraft_registration'],
-                            "subchain_address": result.get("subchain_address", ""),
-                            "maintenance_type": data['maintenance_type'],
-                            "description": data['maintenance_description'],
-                            "technician_address": technician_info.get('address', '') if technician_info else ''
-                        },
-                        "signer_address": technician_info.get('address', '') if technician_info else ''
-                    }
-                    app_state.blockchain_events.append(event_data)
-                    app_state.save_blockchain_events()
-                else:
-                    print(f"[DEBUG] 记录 {record_id} 同步到区块链失败: {result.get('error')}")
-        except Exception as e:
-            print(f"[DEBUG] 同步记录到区块链失败: {e}")
-
-        # 为技术人员分配任务（创建对应的检测任务）
-        try:
-            # 生成任务ID
-            task_id = str(uuid.uuid4())[:12]
-
-            # 创建任务
-            new_task = {
-                "id": task_id,
-                "flight_number": data['aircraft_registration'],
-                "task_type": data['maintenance_type'],
-                "description": data['maintenance_description'],
-                "priority": "medium",
-                "deadline": data['maintenance_date'],
-                "status": "assigned",
-                "assignee_id": data['technician_id'],
-                "assignee_name": data['technician_name'],
-                "created_at": int(datetime.now().timestamp())
-            }
-
-            app_state.tasks.append(new_task)
-
-            print(f"为技术人员 {data['technician_name']} 分配任务成功: {task_id}")
-        except Exception as e:
-            print(f"分配任务失败: {e}")
+        record_id, error_code, error_detail = blockchain_workflow.create_record(
+            data=data,
+            maintenance_records=app_state.maintenance_records,
+            tasks=app_state.tasks,
+            users=app_state.users,
+            contract_engine=app_state.contract_engine,
+            master_contract=app_state.master_contract,
+            blockchain_events=app_state.blockchain_events,
+            save_maintenance_records=app_state.save_maintenance_records,
+            save_blockchain_events=app_state.save_blockchain_events
+        )
+        if error_code == "missing_field":
+            return JSONResponse(status_code=400, content={"error": f"{error_detail} 不能为空"})
+        if error_code:
+            return JSONResponse(status_code=500, content={"error": "创建记录失败: " + str(error_detail or "unknown")})
 
         return JSONResponse(status_code=200, content={"message": "维修记录创建成功", "record_id": record_id})
     except Exception as e:
@@ -161,129 +43,27 @@ async def create_maintenance_record(request: Request):
 async def get_maintenance_records(request: Request):
     """获取维修记录列表"""
     try:
-        print(f"[DEBUG] get_maintenance_records 开始执行")
-
         if not app_state.contract_engine or not app_state.master_contract:
-            print(f"[DEBUG] 区块链系统未初始化")
             return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
 
-        # 获取查询参数
         status_value = request.query_params.get("status", "all")
         aircraft_registration = request.query_params.get("aircraft_registration", "")
         search = request.query_params.get("search", "")
 
-        print(f"[DEBUG] 查询参数 - status: {status_value}, aircraft_registration: {aircraft_registration}, search: {search}")
+        records, error_code = blockchain_workflow.list_records(
+            status_value=status_value,
+            aircraft_registration=aircraft_registration,
+            search=search,
+            maintenance_records=app_state.maintenance_records,
+            master_contract=app_state.master_contract,
+            users=app_state.users,
+            tasks=app_state.tasks,
+            save_maintenance_records=app_state.save_maintenance_records
+        )
+        if error_code == "blockchain_not_initialized":
+            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
 
-        # 从区块链获取所有记录
-        all_records = []
-        for record_id, record in app_state.master_contract.state["records"].items():
-            # 优先从maintenance_records中获取技术人员信息
-            technician_name = "未知"
-
-            # 先检查maintenance_records中是否有该记录（获取最新状态）
-            if record_id in app_state.maintenance_records:
-                maintenance_record = app_state.maintenance_records[record_id]
-                # 尝试从maintenance_records中获取技术人员名称
-                technician_name = maintenance_record.get("technician_name", "未知")
-
-                # 如果technician_name是"未知"，尝试从task_id找回技术人员
-                if technician_name == "未知" or not technician_name:
-                    task_id = maintenance_record.get("task_id")
-                    if task_id:
-                        # 从任务列表中查找对应的任务
-                        for task in app_state.tasks:
-                            if str(task.get("id")) == str(task_id):
-                                assignee_id = task.get("assignee_id")
-                                if assignee_id and assignee_id in app_state.users:
-                                    technician_name = app_state.users[assignee_id].get("name", assignee_id)
-                                    # 更新maintenance_records中的technician_name
-                                    maintenance_record["technician_name"] = technician_name
-                                    maintenance_record["technician_id"] = assignee_id
-                                    print(f"[DEBUG] 从任务找回技术人员: {task_id} -> {technician_name}")
-                                    app_state.save_maintenance_records()
-                                break
-
-                # 使用maintenance_records中的状态（因为审批后更新的是这里）
-                record_status = maintenance_record.get("status", record.get("status", "pending"))
-                print(f"[DEBUG] Record {record_id} found in maintenance_records: technician={technician_name}, status={record_status}")
-            else:
-                # 如果maintenance_records中没有，再从区块链记录中获取
-                technician_address = record.get("technician_address", "")
-                if technician_address:
-                    # 如果有技术员地址，从用户列表中查找名称
-                    for user_id, user in app_state.users.items():
-                        if user.get("address") == technician_address:
-                            technician_name = user.get("name", user.get("username", "未知"))
-                            break
-                else:
-                    # 如果没有技术员地址，使用记录中的名称
-                    technician_name = record.get("technician_name", "未知")
-                # 使用区块链中的状态
-                record_status = record.get("status", "pending")
-                print(f"[DEBUG] Record {record_id} NOT in maintenance_records: technician={technician_name}, status={record_status}")
-
-            # 格式化维修日期
-            maintenance_date = ""
-            if record.get("created_at"):
-                if isinstance(record["created_at"], (int, float)):
-                    maintenance_date = datetime.fromtimestamp(record["created_at"]).strftime("%Y/%m/%d %H:%M:%S")
-                else:
-                    maintenance_date = str(record["created_at"])
-
-            # 获取任务信息
-            task_info = None
-            task_id = record.get("task_id") or maintenance_record.get("task_id") if record_id in app_state.maintenance_records else None
-            if task_id:
-                for task in app_state.tasks:
-                    if str(task.get("id")) == str(task_id):
-                        task_info = {
-                            "id": task.get("id"),
-                            "task_type": task.get("task_type"),
-                            "priority": task.get("priority"),
-                            "status": task.get("status")
-                        }
-                        break
-
-            all_records.append({
-                "id": record_id,
-                **record,
-                "maintenance_date": maintenance_date,
-                "technician_name": technician_name,
-                "status": record_status,
-                "task_info": task_info
-            })
-
-        print(f"[DEBUG] 获取到 {len(all_records)} 条记录")
-
-        # 过滤记录
-        filtered_records = []
-        for record in all_records:
-            # 状态过滤
-            if status_value != "all" and record["status"] != status_value:
-                continue
-
-            # 飞机注册号过滤
-            if aircraft_registration and record["aircraft_registration"] != aircraft_registration:
-                continue
-
-            # 搜索过滤
-            if search:
-                if not (
-                    search in record["id"] or
-                    search in record["aircraft_registration"] or
-                    search in record.get("technician_name", "") or
-                    search in record.get("technician_address", "")
-                ):
-                    continue
-
-            filtered_records.append(record)
-
-        print(f"[DEBUG] 过滤后 {len(filtered_records)} 条记录")
-
-        # 按创建时间排序
-        filtered_records.sort(key=lambda x: x["created_at"], reverse=True)
-
-        return JSONResponse(status_code=200, content={"records": filtered_records})
+        return JSONResponse(status_code=200, content={"records": records})
     except Exception as e:
         print(f"[DEBUG] 获取记录异常: {e}")
         import traceback
@@ -294,14 +74,12 @@ async def get_maintenance_records(request: Request):
 async def get_maintenance_record_detail(record_id: str):
     """获取维修记录详情"""
     try:
-        print(f"[DEBUG] get_maintenance_record_detail - record_id: {record_id}")
-
-        if record_id not in app_state.maintenance_records:
-            print(f"[DEBUG] 记录不存在: {record_id}")
+        record, error_code = blockchain_workflow.get_record_detail(
+            record_id,
+            app_state.maintenance_records
+        )
+        if error_code == "record_not_found":
             return JSONResponse(status_code=404, content={"error": "记录不存在"})
-
-        record = app_state.maintenance_records[record_id]
-        print(f"[DEBUG] 记录详情 - status: {record.get('status')}, id: {record.get('id')}")
 
         return JSONResponse(status_code=200, content={"record": record})
     except Exception as e:
@@ -314,143 +92,40 @@ async def get_maintenance_record_detail(record_id: str):
 async def approve_maintenance_record(request: Request, record_id: str):
     """审批维修记录"""
     try:
-        if record_id not in app_state.maintenance_records:
-            return JSONResponse(status_code=404, content={"error": "记录不存在"})
-
         data = await request.json()
         action = data.get("action", "approve")  # approve, reject, release
 
         # 获取当前用户信息
         current_user = None
-        try:
-            # 优先从cookie获取token
-            token = request.cookies.get("access_token")
-            if not token:
-                # 如果cookie中没有，尝试从Authorization header获取
-                token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        payload, _ = auth_workflow.get_payload_from_request(
+            request,
+            app_state.SECRET_KEY,
+            app_state.ALGORITHM
+        )
+        if payload:
+            current_user = {
+                "address": payload.get("sub"),
+                "username": payload.get("username"),
+                "role": payload.get("role", "user"),
+                "public_key": payload.get("public_key", "")
+            }
 
-            if token:
-                payload = jwt.decode(token, app_state.SECRET_KEY, algorithms=[app_state.ALGORITHM])
-                current_user = {
-                    "address": payload.get("sub"),
-                    "username": payload.get("username"),
-                    "role": payload.get("role", "user"),
-                    "public_key": payload.get("public_key", "")
-                }
-        except:
-            pass
-
-        # 更新记录状态
-        record = app_state.maintenance_records[record_id]
-        if action == "approve":
-            record["status"] = "approved"
-        elif action == "reject":
-            record["status"] = "rejected"
-        elif action == "release":
-            record["status"] = "released"
-
-        record["updated_at"] = int(datetime.now().timestamp())
-
-        # 保存维修记录到文件
-        app_state.save_maintenance_records()
-
-        # 同时更新智能合约中的状态
-        if app_state.contract_engine and app_state.master_contract and current_user:
-            try:
-                timestamp = int(datetime.now().timestamp())
-                nonce = str(timestamp)
-
-                # 根据操作类型调用不同的合约方法
-                method_name = None
-                if action == "approve":
-                    method_name = "approveRecord"
-                elif action == "reject":
-                    method_name = "rejectRecord"
-                elif action == "release":
-                    method_name = "releaseRecord"
-
-                if method_name:
-                    # 从users.json中获取私钥
-                    username = current_user.get("name")
-                    private_key = ""
-                    if username and username in app_state.users:
-                        private_key = app_state.users[username].get("private_key", "")
-
-                    if private_key:
-                        # 创建签名数据
-                        sign_data = SignatureManager.create_sign_data(
-                            contract_address=app_state.master_contract.contract_address,
-                            method=method_name,
-                            params={
-                                "record_id": record_id,
-                                "approver_address": current_user["address"]
-                            },
-                            timestamp=timestamp,
-                            nonce=nonce
-                        )
-
-                        # 使用私钥签名
-                        signature_result = SignatureManager.sign_data(private_key, sign_data)
-                        if signature_result:
-                            signature = signature_result
-
-                            # 执行智能合约
-                            result = app_state.contract_engine.execute_contract(
-                                contract_address=app_state.master_contract.contract_address,
-                                method_name=method_name,
-                                params={
-                                    "record_id": record_id,
-                                    "approver_address": current_user["address"],
-                                    "caller_address": current_user["address"],
-                                    "caller_role": current_user["role"]
-                                },
-                                signature=signature,
-                                signer_address=current_user["address"],
-                                nonce=nonce,
-                                verify_signature_func=lambda sig, addr, params: {"success": True}
-                            )
-
-                            if result.get("success"):
-                                app_state.save_blockchain()
-                                app_state.save_contracts()
-                                print(f"[DEBUG] 维修记录状态已更新到区块链: {record_id} -> {action}")
-
-                                # 更新区块链信息到维修记录
-                                if "transaction_hash" not in app_state.maintenance_records[record_id]:
-                                    app_state.maintenance_records[record_id]["transaction_hash"] = result.get("transaction_hash", "")
-                                app_state.maintenance_records[record_id]["block_number"] = result.get("block_index", 0)
-                                app_state.maintenance_records[record_id]["blockchain_timestamp"] = int(datetime.now().timestamp())
-                                app_state.save_maintenance_records()
-
-                                # 手动添加事件到持久化存储
-                                event_type = None
-                                if action == "approve":
-                                    event_type = "RecordApproved"
-                                elif action == "reject":
-                                    event_type = "RecordRejected"
-                                elif action == "release":
-                                    event_type = "RecordReleased"
-
-                                if event_type:
-                                    event_data = {
-                                        "event_name": event_type,
-                                        "contract_address": app_state.master_contract.contract_address,
-                                        "block_index": result.get("block_index", 0),
-                                        "data": {
-                                            "record_id": record_id,
-                                            "aircraft_registration": record.get("aircraft_registration", ""),
-                                            "subchain_address": record.get("subchain_address", "")
-                                        },
-                                        "signer_address": current_user["address"]
-                                    }
-                                    app_state.blockchain_events.append(event_data)
-                                    app_state.save_blockchain_events()
-                            else:
-                                print(f"[DEBUG] 更新区块链状态失败: {result.get('error')}")
-            except Exception as e:
-                print(f"[DEBUG] 更新区块链状态异常: {e}")
-                import traceback
-                traceback.print_exc()
+        record, error_code = blockchain_workflow.update_record_status(
+            record_id=record_id,
+            action=action,
+            current_user=current_user,
+            maintenance_records=app_state.maintenance_records,
+            master_contract=app_state.master_contract,
+            contract_engine=app_state.contract_engine,
+            users=app_state.users,
+            blockchain_events=app_state.blockchain_events,
+            save_maintenance_records=app_state.save_maintenance_records,
+            save_blockchain_events=app_state.save_blockchain_events,
+            save_blockchain=app_state.save_blockchain,
+            save_contracts=app_state.save_contracts
+        )
+        if error_code == "record_not_found":
+            return JSONResponse(status_code=404, content={"error": "记录不存在"})
 
         return JSONResponse(status_code=200, content={"message": "审批成功", "record": record, "record_id": record_id})
     except Exception as e:
@@ -460,131 +135,40 @@ async def approve_maintenance_record(request: Request, record_id: str):
 async def release_maintenance_record(request: Request, record_id: str):
     """释放维修记录"""
     try:
-        if record_id not in app_state.maintenance_records:
-            return JSONResponse(status_code=404, content={"error": "记录不存在"})
-
         data = await request.json()
         action = data.get("action", "release")  # release
 
         # 获取当前用户信息
         current_user = None
-        try:
-            # 优先从cookie获取token
-            token = request.cookies.get("access_token")
-            if not token:
-                # 如果cookie中没有，尝试从Authorization header获取
-                token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        payload, _ = auth_workflow.get_payload_from_request(
+            request,
+            app_state.SECRET_KEY,
+            app_state.ALGORITHM
+        )
+        if payload:
+            current_user = {
+                "address": payload.get("sub"),
+                "username": payload.get("username"),
+                "role": payload.get("role", "user"),
+                "public_key": payload.get("public_key", "")
+            }
 
-            if token:
-                payload = jwt.decode(token, app_state.SECRET_KEY, algorithms=[app_state.ALGORITHM])
-                current_user = {
-                    "address": payload.get("sub"),
-                    "username": payload.get("username"),
-                    "role": payload.get("role", "user"),
-                    "public_key": payload.get("public_key", "")
-                }
-        except:
-            pass
-
-        # 更新记录状态
-        record = app_state.maintenance_records[record_id]
-        if action == "release":
-            record["status"] = "released"
-
-        record["updated_at"] = int(datetime.now().timestamp())
-
-        # 保存维修记录到文件
-        app_state.save_maintenance_records()
-
-        # 同时更新智能合约中的状态
-        if app_state.contract_engine and app_state.master_contract and current_user:
-            try:
-                timestamp = int(datetime.now().timestamp())
-                nonce = str(timestamp)
-
-                # 根据操作类型调用不同的合约方法
-                method_name = None
-                if action == "release":
-                    method_name = "releaseRecord"
-
-                if method_name:
-                    # 从users.json中获取私钥
-                    username = current_user.get("name")
-                    private_key = ""
-                    if username and username in app_state.users:
-                        private_key = app_state.users[username].get("private_key", "")
-
-                    if private_key:
-                        # 创建签名数据
-                        sign_data = SignatureManager.create_sign_data(
-                            contract_address=app_state.master_contract.contract_address,
-                            method=method_name,
-                            params={
-                                "record_id": record_id,
-                                "approver_address": current_user["address"]
-                            },
-                            timestamp=timestamp,
-                            nonce=nonce
-                        )
-
-                        # 使用私钥签名
-                        signature_result = SignatureManager.sign_data(private_key, sign_data)
-                        if signature_result:
-                            signature = signature_result
-
-                            # 执行智能合约
-                            result = app_state.contract_engine.execute_contract(
-                                contract_address=app_state.master_contract.contract_address,
-                                method_name=method_name,
-                                params={
-                                    "record_id": record_id,
-                                    "approver_address": current_user["address"],
-                                    "caller_address": current_user["address"],
-                                    "caller_role": current_user["role"]
-                                },
-                                signature=signature,
-                                signer_address=current_user["address"],
-                                nonce=nonce,
-                                verify_signature_func=lambda sig, addr, params: {"success": True}
-                            )
-
-                            if result.get("success"):
-                                app_state.save_blockchain()
-                                app_state.save_contracts()
-                                print(f"[DEBUG] 维修记录状态已更新到区块链: {record_id} -> {action}")
-
-                                # 更新区块链信息到维修记录
-                                if "transaction_hash" not in app_state.maintenance_records[record_id]:
-                                    app_state.maintenance_records[record_id]["transaction_hash"] = result.get("transaction_hash", "")
-                                app_state.maintenance_records[record_id]["block_number"] = result.get("block_index", 0)
-                                app_state.maintenance_records[record_id]["blockchain_timestamp"] = int(datetime.now().timestamp())
-                                app_state.save_maintenance_records()
-
-                                # 手动添加事件到持久化存储
-                                event_type = None
-                                if action == "release":
-                                    event_type = "RecordReleased"
-
-                                if event_type:
-                                    event_data = {
-                                        "event_name": event_type,
-                                        "contract_address": app_state.master_contract.contract_address,
-                                        "block_index": result.get("block_index", 0),
-                                        "data": {
-                                            "record_id": record_id,
-                                            "aircraft_registration": record.get("aircraft_registration", ""),
-                                            "subchain_address": record.get("subchain_address", "")
-                                        },
-                                        "signer_address": current_user["address"]
-                                    }
-                                    app_state.blockchain_events.append(event_data)
-                                    app_state.save_blockchain_events()
-                            else:
-                                print(f"[DEBUG] 更新区块链状态失败: {result.get('error')}")
-            except Exception as e:
-                print(f"[DEBUG] 更新区块链状态异常: {e}")
-                import traceback
-                traceback.print_exc()
+        record, error_code = blockchain_workflow.update_record_status(
+            record_id=record_id,
+            action=action,
+            current_user=current_user,
+            maintenance_records=app_state.maintenance_records,
+            master_contract=app_state.master_contract,
+            contract_engine=app_state.contract_engine,
+            users=app_state.users,
+            blockchain_events=app_state.blockchain_events,
+            save_maintenance_records=app_state.save_maintenance_records,
+            save_blockchain_events=app_state.save_blockchain_events,
+            save_blockchain=app_state.save_blockchain,
+            save_contracts=app_state.save_contracts
+        )
+        if error_code == "record_not_found":
+            return JSONResponse(status_code=404, content={"error": "记录不存在"})
 
         return JSONResponse(status_code=200, content={"message": "释放成功", "record": record, "record_id": record_id})
     except Exception as e:
@@ -594,15 +178,14 @@ async def release_maintenance_record(request: Request, record_id: str):
 async def get_all_maintenance_records(request: Request):
     """获取所有维修记录"""
     try:
-        if not app_state.contract_engine or not app_state.master_contract:
+        records, error_code = blockchain_workflow.get_all_records(app_state.master_contract)
+        if error_code == "blockchain_not_initialized":
             return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
-
-        all_records = list(app_state.master_contract.state["records"].values())
 
         return JSONResponse(status_code=200, content={
             "success": True,
-            "records": all_records,
-            "total": len(all_records)
+            "records": records,
+            "total": len(records)
         })
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": "获取记录失败: " + str(e)})
@@ -611,12 +194,10 @@ async def get_all_maintenance_records(request: Request):
 async def get_maintenance_record(record_id: str):
     """获取单个维修记录"""
     try:
-        if not app_state.contract_engine or not app_state.master_contract:
+        record, error_code = blockchain_workflow.get_record(app_state.master_contract, record_id)
+        if error_code == "blockchain_not_initialized":
             return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
-
-        record = app_state.master_contract.state["records"].get(record_id)
-
-        if not record:
+        if error_code == "record_not_found":
             return JSONResponse(status_code=404, content={"error": "记录不存在"})
 
         return JSONResponse(status_code=200, content={
@@ -630,15 +211,12 @@ async def get_maintenance_record(record_id: str):
 async def get_aircraft_records(aircraft_registration: str):
     """获取指定飞机的维修记录"""
     try:
-        if not app_state.contract_engine or not app_state.master_contract:
+        aircraft_records, error_code = blockchain_workflow.get_aircraft_records(
+            app_state.master_contract,
+            aircraft_registration
+        )
+        if error_code == "blockchain_not_initialized":
             return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
-
-        aircraft_records = []
-
-        # 从区块链获取飞机的所有维修记录
-        for record_id, record in app_state.master_contract.state["records"].items():
-            if record.get("aircraft_registration") == aircraft_registration:
-                aircraft_records.append(record)
 
         return JSONResponse(status_code=200, content={
             "success": True,
@@ -652,26 +230,12 @@ async def get_aircraft_records(aircraft_registration: str):
 async def get_blockchain_stats():
     """获取区块链统计信息"""
     try:
-        if not app_state.contract_engine or not app_state.master_contract:
-            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
-
-        total_records = len(app_state.master_contract.state["records"])
-        total_blocks = app_state.contract_engine.get_blockchain_length()
-        total_aircraft = len(app_state.master_contract.state.get("aircraft_subchains", {}))
-
-        # 计算已完成的维修记录
-        completed_records = sum(
-            1 for record in app_state.master_contract.state["records"].values()
-            if record.get("status") in ["approved", "released"]
+        stats, error_code = blockchain_workflow.get_stats(
+            app_state.master_contract,
+            app_state.contract_engine
         )
-
-        stats = {
-            "total_records": total_records,
-            "total_blocks": total_blocks,
-            "total_aircraft": total_aircraft,
-            "completed_records": completed_records,
-            "pending_records": total_records - completed_records
-        }
+        if error_code == "blockchain_not_initialized":
+            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
 
         return JSONResponse(status_code=200, content={
             "success": True,

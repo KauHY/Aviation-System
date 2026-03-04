@@ -28,4 +28,15 @@ try:
 except Exception as e:
     print(f"D3.js 下载失败: {e}")
 
+# 下载 ECharts
+echarts_url = 'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js'
+echarts_path = os.path.join(js_dir, 'echarts.min.js')
+
+print(f"正在下载 ECharts...")
+try:
+    urllib.request.urlretrieve(echarts_url, echarts_path)
+    print(f"ECharts 下载成功: {echarts_path}")
+except Exception as e:
+    print(f"ECharts 下载失败: {e}")
+
 print("\n所有库下载完成！")

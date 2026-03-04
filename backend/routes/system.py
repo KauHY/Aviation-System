@@ -1,50 +1,30 @@
-import os
 from datetime import datetime
 
 from fastapi import APIRouter, Request, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse, Response
 
 import app_state
+from services.system_workflow import SystemWorkflow
 
 router = APIRouter()
+system_workflow = SystemWorkflow()
 
 @router.post("/api/system/backup")
 async def backup_system():
     """备份系统数据"""
     try:
-        import zipfile
-
         backup_dir = "backups"
-        if not os.path.exists(backup_dir):
-            os.makedirs(backup_dir)
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = os.path.join(backup_dir, f"backup_{timestamp}.zip")
-
-        with zipfile.ZipFile(backup_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # 备份用户数据
-            if os.path.exists(app_state.USER_DATA_FILE):
-                zipf.write(app_state.USER_DATA_FILE, "users.json")
-
-            # 备份航班数据
-            if os.path.exists('flights.json'):
-                zipf.write('flights.json', "flights.json")
-
-            # 备份维修记录
-            if os.path.exists('maintenance_records.json'):
-                zipf.write('maintenance_records.json', "maintenance_records.json")
-
-            # 备份区块链数据
-            if os.path.exists('blockchain.json'):
-                zipf.write('blockchain.json', "blockchain.json")
-
-            # 备份合约数据
-            if os.path.exists('contracts.json'):
-                zipf.write('contracts.json', "contracts.json")
-
-            # 备份任务数据
-            if os.path.exists('tasks.json'):
-                zipf.write('tasks.json', "tasks.json")
+        files = [
+            (app_state.USER_DATA_FILE, "users.json"),
+            ("flights.json", "flights.json"),
+            ("maintenance_records.json", "maintenance_records.json"),
+            ("blockchain.json", "blockchain.json"),
+            ("contracts.json", "contracts.json"),
+            ("tasks.json", "tasks.json")
+        ]
+        backup_file, error = system_workflow.create_backup(backup_dir, files)
+        if error:
+            return JSONResponse(status_code=500, content={"error": "备份失败: " + error})
 
         return JSONResponse(status_code=200, content={
             "success": True,
@@ -60,16 +40,9 @@ async def download_backup():
     """下载最新的备份文件"""
     try:
         backup_dir = "backups"
-        if not os.path.exists(backup_dir):
+        latest_backup = system_workflow.get_latest_backup(backup_dir)
+        if not latest_backup:
             return JSONResponse(status_code=404, content={"error": "没有可用的备份文件"})
-
-        # 获取最新的备份文件
-        backup_files = [f for f in os.listdir(backup_dir) if f.endswith('.zip')]
-        if not backup_files:
-            return JSONResponse(status_code=404, content={"error": "没有可用的备份文件"})
-
-        backup_files.sort(reverse=True)
-        latest_backup = os.path.join(backup_dir, backup_files[0])
 
         return FileResponse(
             path=latest_backup,
@@ -84,18 +57,6 @@ async def download_backup():
 async def restore_system(backup: UploadFile = File(...)):
     """恢复系统数据"""
     try:
-        import zipfile
-        import shutil
-
-        # 创建临时目录解压
-        temp_dir = f"temp_restore_{int(datetime.now().timestamp())}"
-        os.makedirs(temp_dir, exist_ok=True)
-
-        # 解压备份文件
-        with zipfile.ZipFile(backup.file, 'r') as zip_ref:
-            zip_ref.extractall(temp_dir)
-
-        # 恢复文件
         restore_files = {
             "users.json": app_state.USER_DATA_FILE,
             "flights.json": "flights.json",
@@ -104,14 +65,9 @@ async def restore_system(backup: UploadFile = File(...)):
             "contracts.json": "contracts.json",
             "tasks.json": "tasks.json"
         }
-
-        for source, target in restore_files.items():
-            source_path = os.path.join(temp_dir, source)
-            if os.path.exists(source_path):
-                shutil.copy2(source_path, target)
-
-        # 清理临时目录
-        shutil.rmtree(temp_dir)
+        error = system_workflow.restore_backup(backup.file, restore_files)
+        if error:
+            return JSONResponse(status_code=500, content={"error": "恢复失败: " + error})
 
         return JSONResponse(status_code=200, content={
             "success": True,
@@ -125,15 +81,8 @@ async def restore_system(backup: UploadFile = File(...)):
 async def clear_cache():
     """清理系统缓存"""
     try:
-        cache_cleared = False
-
-        # 清理临时文件
         temp_dirs = ["temp", "cache", "__pycache__"]
-        for temp_dir in temp_dirs:
-            if os.path.exists(temp_dir):
-                import shutil
-                shutil.rmtree(temp_dir)
-                cache_cleared = True
+        cache_cleared = system_workflow.clear_cache(temp_dirs)
 
         return JSONResponse(status_code=200, content={
             "success": True,
@@ -147,13 +96,7 @@ async def clear_cache():
 async def clear_logs():
     """清理系统日志"""
     try:
-        logs_cleared = False
-
-        # 清理日志文件
-        log_files = [f for f in os.listdir('.') if f.endswith('.log') or f.startswith('log_')]
-        for log_file in log_files:
-            os.remove(log_file)
-            logs_cleared = True
+        logs_cleared = system_workflow.clear_logs(".")
 
         return JSONResponse(status_code=200, content={
             "success": True,
