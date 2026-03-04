@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from jose import jwt
 
@@ -1069,13 +1070,23 @@ async def contract_get_blocks():
     """获取区块链数据"""
     try:
         if not app_state.contract_engine:
-            return JSONResponse(status_code=500, content={"error": "区块链系统未初始化"})
+            app_state.load_users()
+            app_state.load_tasks()
+            app_state.load_maintenance_records()
+            app_state.load_flights()
+            app_state.load_blockchain_events()
+            app_state.initialize_blockchain()
+
+        if not app_state.contract_engine:
+            return JSONResponse(status_code=200, content={"blocks": []})
 
         blocks = app_state.contract_engine.get_all_blocks()
 
-        return JSONResponse(status_code=200, content={"blocks": blocks})
+        return JSONResponse(status_code=200, content={"blocks": jsonable_encoder(blocks or [])})
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": "获取区块失败: " + str(e)})
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=200, content={"blocks": [], "error": "获取区块失败: " + str(e)})
 
 
 @router.get("/api/contract/events")
