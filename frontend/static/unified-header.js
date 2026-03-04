@@ -1,5 +1,19 @@
 // 统一导航栏功能
 function initUnifiedHeader() {
+    function ensureFavicon() {
+        const faviconHref = '/static/logo.svg';
+        let icon = document.querySelector('link[rel="icon"]');
+        if (!icon) {
+            icon = document.createElement('link');
+            icon.setAttribute('rel', 'icon');
+            icon.setAttribute('type', 'image/svg+xml');
+            document.head.appendChild(icon);
+        }
+        icon.setAttribute('href', faviconHref);
+    }
+
+    ensureFavicon();
+
     // Force redirect to login when not authenticated.
     function enforceLogin() {
         const currentPath = window.location.pathname;
