@@ -520,5 +520,341 @@
     "created_at": 1772257338,
     "updated_at": 1772257803,
     "task_id": "24"
+  },
+  "5f59ce686856a4037f8ea5d55c9f8f1040fa23d1e7969d820f38e2f62a140620": {
+    "id": "5f59ce686856a4037f8ea5d55c9f8f1040fa23d1e7969d820f38e2f62a140620",
+    "aircraft_registration": "B-1234",
+    "aircraft_model": "B737-800",
+    "aircraft_series": "",
+    "aircraft_age": "",
+    "maintenance_type": "Life-limited Parts Replacement",
+    "maintenance_date": "2026-02-02",
+    "maintenance_description": "左主起落架 #1 轮胎磨损超标，依据 AMM 手册进行更换。检查轮毂无损伤，气压正常。",
+    "maintenance_duration": "",
+    "parts_used": "GY-737-TIRE",
+    "is_rii": false,
+    "technician_name": "张三",
+    "technician_id": "001",
+    "technician_public_key": "",
+    "signature": "",
+    "status": "released",
+    "created_at": 1770015265,
+    "updated_at": 1770015265,
+    "source": "tcg",
+    "tcg_record_id": "5f59ce686856a4037f8ea5d55c9f8f1040fa23d1e7969d820f38e2f62a140620",
+    "tcg_record": {
+      "recordId": "5f59ce686856a4037f8ea5d55c9f8f1040fa23d1e7969d820f38e2f62a140620",
+      "aircraftRegNo": "B-1234",
+      "aircraftType": "B737-800",
+      "jobCardNo": "5f59ce686856a4037f8ea5d55c9f8f1040fa23d1e7969d820f38e2f62a140620",
+      "revision": 1,
+      "ataCode": "32-40",
+      "workType": "Life-limited Parts Replacement",
+      "location": "北京维修基地",
+      "workDescription": "左主起落架 #1 轮胎磨损超标，依据 AMM 手册进行更换。检查轮毂无损伤，气压正常。",
+      "referenceDocument": "AMM 32-45-00",
+      "isRII": false,
+      "usedParts": [
+        {
+          "partNumber": "GY-737-TIRE",
+          "serialNumber": "SN-20250101"
+        }
+      ],
+      "usedTools": [
+        "TL-JACK-001",
+        "TL-TORQUE-050"
+      ],
+      "testMeasureData": [
+        {
+          "testItemName": "轮胎气压",
+          "measuredValues": "205 PSI",
+          "isPass": true
+        },
+        {
+          "testItemName": "轮毂涡流探伤",
+          "measuredValues": "无裂纹",
+          "isPass": true
+        }
+      ],
+      "faultInfo": {
+        "fimCode": "",
+        "faultDescription": ""
+      },
+      "signatures": {
+        "performedBy": "",
+        "performedByName": "张三",
+        "performedById": "001",
+        "performTime": 1769928865,
+        "peerChecks": [
+          {
+            "inspector": "",
+            "name": "李四",
+            "id": "002",
+            "time": 1770015265
+          }
+        ],
+        "riiBy": "",
+        "riiByName": "王五",
+        "riiById": "RII-001",
+        "releaseBy": "",
+        "releaseByName": "赵六",
+        "releaseById": "REL-001",
+        "releaseTime": 1770015265
+      },
+      "replaceInfo": [
+        {
+          "removedPartNo": "GY-737-TIRE",
+          "removedSerialNo": "SN-20231212",
+          "removedStatus": "磨损超标",
+          "installedPartNo": "GY-737-TIRE",
+          "installedSerialNo": "SN-20250101",
+          "installedSource": "航材库房",
+          "replacementReason": "例行更换"
+        }
+      ],
+      "recorder": "0x0000000000000000000000000000000000000000",
+      "timestamp": 1770015265,
+      "status": "Released"
+    }
+  },
+  "85cc5fcdb6acdbe3f12565e493098f96347efe2800efba8bbe7598dd3e9c63c0": {
+    "id": "85cc5fcdb6acdbe3f12565e493098f96347efe2800efba8bbe7598dd3e9c63c0",
+    "aircraft_registration": "B-5678",
+    "aircraft_model": "A320neo",
+    "aircraft_series": "",
+    "aircraft_age": "",
+    "maintenance_type": "Transit / Turnaround Check",
+    "maintenance_date": "2026-02-02",
+    "maintenance_description": "机组报告驾驶舱温度无法调节。测试发现温度控制活门卡阻。更换温度控制活门，测试正常。",
+    "maintenance_duration": "",
+    "parts_used": "VALVE-TC-320,SEAL-RING-05",
+    "is_rii": false,
+    "technician_name": "Mike",
+    "technician_id": "A003",
+    "technician_public_key": "",
+    "signature": "",
+    "status": "released",
+    "created_at": 1770015265,
+    "updated_at": 1770015265,
+    "source": "tcg",
+    "tcg_record_id": "85cc5fcdb6acdbe3f12565e493098f96347efe2800efba8bbe7598dd3e9c63c0",
+    "tcg_record": {
+      "recordId": "85cc5fcdb6acdbe3f12565e493098f96347efe2800efba8bbe7598dd3e9c63c0",
+      "aircraftRegNo": "B-5678",
+      "aircraftType": "A320neo",
+      "jobCardNo": "85cc5fcdb6acdbe3f12565e493098f96347efe2800efba8bbe7598dd3e9c63c0",
+      "revision": 1,
+      "ataCode": "21-50",
+      "workType": "Transit / Turnaround Check",
+      "location": "广州白云机场",
+      "workDescription": "机组报告驾驶舱温度无法调节。测试发现温度控制活门卡阻。更换温度控制活门，测试正常。",
+      "referenceDocument": "TSM 21-50-00 / AMM 21-61-00",
+      "isRII": false,
+      "usedParts": [
+        {
+          "partNumber": "VALVE-TC-320",
+          "serialNumber": "VN-889900"
+        },
+        {
+          "partNumber": "SEAL-RING-05",
+          "serialNumber": "N/A"
+        }
+      ],
+      "usedTools": [
+        "TL-MULTI-METER",
+        "TL-WRENCH-SET"
+      ],
+      "testMeasureData": [
+        {
+          "testItemName": "活门电阻测试",
+          "measuredValues": "150 Ohm",
+          "isPass": true
+        },
+        {
+          "testItemName": "功能测试",
+          "measuredValues": "温度调节响应正常",
+          "isPass": true
+        }
+      ],
+      "faultInfo": {
+        "fimCode": "21-50-00-810-801",
+        "faultDescription": "驾驶舱温度无法调节，ECAM 警告 AIR COND"
+      },
+      "signatures": {
+        "performedBy": "",
+        "performedByName": "Mike",
+        "performedById": "A003",
+        "performTime": 1769842465,
+        "peerChecks": [
+          {
+            "inspector": "",
+            "name": "Sarah",
+            "id": "A004",
+            "time": 1770015265
+          }
+        ],
+        "riiBy": "",
+        "riiByName": "",
+        "riiById": "",
+        "releaseBy": "",
+        "releaseByName": "Tom",
+        "releaseById": "REL-002",
+        "releaseTime": 1770015265
+      },
+      "replaceInfo": [
+        {
+          "removedPartNo": "VALVE-TC-320",
+          "removedSerialNo": "VN-112233",
+          "removedStatus": "内部卡阻",
+          "installedPartNo": "VALVE-TC-320",
+          "installedSerialNo": "VN-889900",
+          "installedSource": "现场拆件",
+          "replacementReason": "故障更换"
+        }
+      ],
+      "recorder": "0x0000000000000000000000000000000000000000",
+      "timestamp": 1770015265,
+      "status": "Released"
+    }
+  },
+  "1eb4abe4ad2a355543078b345362b67eda735f1bfd04cc9dd17e3d0615a32300": {
+    "id": "1eb4abe4ad2a355543078b345362b67eda735f1bfd04cc9dd17e3d0615a32300",
+    "aircraft_registration": "B-9999",
+    "aircraft_model": "B787-9",
+    "aircraft_series": "",
+    "aircraft_age": "",
+    "maintenance_type": "A-Check",
+    "maintenance_date": "2026-02-02",
+    "maintenance_description": "执行发动机孔探检查。高压压气机叶片发现轻微外物打伤，在手册允许范围内。已记录并监控。",
+    "maintenance_duration": "",
+    "parts_used": "",
+    "is_rii": false,
+    "technician_name": "陈工",
+    "technician_id": "E001",
+    "technician_public_key": "",
+    "signature": "",
+    "status": "released",
+    "created_at": 1770015265,
+    "updated_at": 1770015265,
+    "source": "tcg",
+    "tcg_record_id": "1eb4abe4ad2a355543078b345362b67eda735f1bfd04cc9dd17e3d0615a32300",
+    "tcg_record": {
+      "recordId": "1eb4abe4ad2a355543078b345362b67eda735f1bfd04cc9dd17e3d0615a32300",
+      "aircraftRegNo": "B-9999",
+      "aircraftType": "B787-9",
+      "jobCardNo": "1eb4abe4ad2a355543078b345362b67eda735f1bfd04cc9dd17e3d0615a32300",
+      "revision": 2,
+      "ataCode": "72-00",
+      "workType": "A-Check",
+      "location": "上海浦东机坪",
+      "workDescription": "执行发动机孔探检查。高压压气机叶片发现轻微外物打伤，在手册允许范围内。已记录并监控。",
+      "referenceDocument": "AMM 72-00-00",
+      "isRII": false,
+      "usedParts": [],
+      "usedTools": [
+        "TL-BORESCOPE-VID"
+      ],
+      "testMeasureData": [
+        {
+          "testItemName": "HPC 第5级叶片损伤",
+          "measuredValues": "深度 0.05mm (Limit 0.1mm)",
+          "isPass": true
+        },
+        {
+          "testItemName": "燃烧室检查",
+          "measuredValues": "正常",
+          "isPass": true
+        }
+      ],
+      "faultInfo": {
+        "fimCode": "",
+        "faultDescription": ""
+      },
+      "signatures": {
+        "performedBy": "",
+        "performedByName": "陈工",
+        "performedById": "E001",
+        "performTime": 1769756065,
+        "peerChecks": [
+          {
+            "inspector": "",
+            "name": "刘工",
+            "id": "E002",
+            "time": 1770015265
+          }
+        ],
+        "riiBy": "",
+        "riiByName": "",
+        "riiById": "",
+        "releaseBy": "",
+        "releaseByName": "张经理",
+        "releaseById": "MGR-001",
+        "releaseTime": 1770015265
+      },
+      "replaceInfo": [],
+      "recorder": "0x0000000000000000000000000000000000000000",
+      "timestamp": 1770015265,
+      "status": "Released"
+    }
+  },
+  "92b286c596dd7644f4928b77c213a2b7b1ac3a03ddfa14d96ff228be8dfbb82f": {
+    "id": "92b286c596dd7644f4928b77c213a2b7b1ac3a03ddfa14d96ff228be8dfbb82f",
+    "aircraft_registration": "B-2233",
+    "aircraft_model": "1",
+    "aircraft_series": "",
+    "aircraft_age": "",
+    "maintenance_type": "1",
+    "maintenance_date": "2026-02-04",
+    "maintenance_description": "1",
+    "maintenance_duration": "",
+    "parts_used": "",
+    "is_rii": false,
+    "technician_name": "默认用户",
+    "technician_id": "0x0000000000000000000000000000000000000001",
+    "technician_public_key": "",
+    "signature": "",
+    "status": "pending",
+    "created_at": 1770185597,
+    "updated_at": 1770185597,
+    "source": "tcg",
+    "tcg_record_id": "92b286c596dd7644f4928b77c213a2b7b1ac3a03ddfa14d96ff228be8dfbb82f",
+    "tcg_record": {
+      "recordId": "92b286c596dd7644f4928b77c213a2b7b1ac3a03ddfa14d96ff228be8dfbb82f",
+      "aircraftRegNo": "B-2233",
+      "aircraftType": "1",
+      "jobCardNo": "92b286c596dd7644f4928b77c213a2b7b1ac3a03ddfa14d96ff228be8dfbb82f",
+      "revision": 0,
+      "ataCode": "",
+      "workType": "1",
+      "location": "",
+      "workDescription": "1",
+      "referenceDocument": "",
+      "isRII": false,
+      "usedParts": [],
+      "usedTools": [],
+      "testMeasureData": [],
+      "faultInfo": {
+        "fimCode": "",
+        "faultDescription": "1"
+      },
+      "signatures": {
+        "performedBy": "0x0000000000000000000000000000000000000001",
+        "performedByName": "默认用户",
+        "performedById": "0x0000000000000000000000000000000000000001",
+        "performTime": 1770185597,
+        "peerChecks": [],
+        "riiBy": "",
+        "riiByName": "",
+        "riiById": "",
+        "releaseBy": "",
+        "releaseByName": "",
+        "releaseById": "",
+        "releaseTime": 0
+      },
+      "replaceInfo": [],
+      "recorder": "",
+      "timestamp": 1770185597,
+      "status": "Pending"
+    }
   }
 }
