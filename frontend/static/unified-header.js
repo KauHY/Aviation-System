@@ -1,5 +1,24 @@
 // 统一导航栏功能
 function initUnifiedHeader() {
+    // Force redirect to login when not authenticated.
+    function enforceLogin() {
+        const currentPath = window.location.pathname;
+        const allowPaths = new Set(['/login']);
+        const currentUser = localStorage.getItem('currentUser');
+        const accessToken = localStorage.getItem('access_token');
+
+        if (!allowPaths.has(currentPath) && !currentUser && !accessToken) {
+            window.location.href = '/login';
+            return false;
+        }
+
+        return true;
+    }
+
+    if (!enforceLogin()) {
+        return;
+    }
+
     // 更新用户信息
     function updateUserInfo() {
         const username = localStorage.getItem('currentUser');
