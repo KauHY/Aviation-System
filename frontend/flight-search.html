@@ -5,36 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>航班查询 - 飞机检修远程操作系统</title>
     <link rel="stylesheet" href="/static/unified-header.css">
+    <script src="/static/js/echarts.min.js"></script>
     <script>
         window.echartsLoadError = '';
-        window.echartsReady = new Promise((resolve) => {
-            const localSrc = '/static/js/echarts.min.js';
-            const cdnSrc = 'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js';
-
-            const loadScript = (src, onSuccess, onFailure) => {
-                const script = document.createElement('script');
-                script.src = src;
-                script.async = true;
-                script.onload = () => onSuccess();
-                script.onerror = () => onFailure();
-                document.head.appendChild(script);
-            };
-
-            loadScript(
-                localSrc,
-                () => resolve(true),
-                () => {
-                    loadScript(
-                        cdnSrc,
-                        () => resolve(true),
-                        () => {
-                            window.echartsLoadError = 'Failed to load ECharts from local and CDN.';
-                            resolve(false);
-                        }
-                    );
-                }
-            );
-        });
     </script>
     <!-- 引入离线机场数据 -->
     <script src="/static/airports.js"></script>
@@ -47,9 +20,9 @@
         window.chinaMapLoadingPromise = null;
 
         async function loadChinaMapOnce() {
-            const echartsLoaded = await (window.echartsReady || Promise.resolve(false));
+            const echartsLoaded = typeof echarts !== 'undefined';
             if (!echartsLoaded || typeof echarts === 'undefined') {
-                window.chinaMapLoadError = window.echartsLoadError || 'ECharts not available.';
+                window.chinaMapLoadError = window.echartsLoadError || 'ECharts local file not available.';
                 window.chinaMapLoaded = false;
                 console.warn('ECharts not available for map rendering:', window.chinaMapLoadError);
                 return false;
