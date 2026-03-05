@@ -8,3 +8,5 @@ passlib[bcrypt]
 ultralytics
 numpy
 Pillow
+cryptography
+ipaddress

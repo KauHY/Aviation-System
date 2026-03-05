@@ -11,6 +11,7 @@
 - 任务管理：检测人员列表、任务分配、任务完成闭环
 - 维护记录与区块链：记录创建、审批、放行、链上同步与事件追踪
 - 航班管理：航班列表、创建、更新
+- 远程视频协作：支持远程视频通话、屏幕共享、实时聊天
 - 系统能力：备份/恢复、清缓存、清日志、统计与报表导出
 - 前端可视化：区块链可视化、系统监控图表
 - 前端离线化：Chart.js / D3 / ECharts 已支持本地静态资源加载
@@ -24,11 +25,13 @@
 - FastAPI
 - JWT（python-jose）
 - passlib[bcrypt]
+- WebSocket（实时通信）
 - JSON 文件存储
 - 自定义区块链合约引擎（contracts）
 
 ### 前端
 - HTML + CSS + JavaScript
+- WebRTC（视频通话）
 - 本地图表资源：
   - `/static/js/chart.umd.min.js`
   - `/static/js/d3.v7.min.js`
@@ -37,6 +40,7 @@
 ### 部署
 - Docker / Docker Compose
 - Windows / Linux
+- 支持 HTTP / HTTPS
 
 ---
 
@@ -54,54 +58,6 @@ FastAPI（backend/main.py）
    ├─ state/*         # app_state 拆分后的状态/初始化/报表/指标模块
    ├─ contracts/*     # 区块链与合约模拟引擎
    └─ *.json          # 运行时数据
-```
-
----
-
-## 目录结构（精简版）
-
-```text
-Aviation-System/
-├─ backend/
-│  ├─ main.py
-│  ├─ app_state.py
-│  ├─ routes/
-│  │  ├─ pages.py
-│  │  ├─ auth.py
-│  │  ├─ blockchain.py
-│  │  ├─ system.py
-│  │  ├─ flights.py
-│  │  ├─ tasks.py
-│  │  ├─ inspection.py
-│  │  └─ permissions.py
-│  ├─ services/
-│  │  ├─ *_workflow.py
-│  │  ├─ json_store.py
-│  │  └─ users.py / tasks.py / flights.py ...
-│  ├─ state/
-│  │  ├─ config.py
-│  │  ├─ services_registry.py
-│  │  ├─ blockchain_ops.py
-│  │  ├─ reporting.py
-│  │  └─ ...
-│  ├─ contracts/
-│  └─ *.json
-├─ frontend/
-│  ├─ *.html
-│  └─ static/
-│     ├─ js/                         # 本地图表库
-│     ├─ chart-theme.js
-│     ├─ contract-client.js
-│     ├─ permission-manager.js
-│     └─ ...
-├─ tools/
-│  ├─ assets/                        # 前端资源下载脚本
-│  ├─ generators/                    # 数据生成脚本
-│  ├─ data/                          # 数据处理脚本
-│  └─ dev_checks/                    # 开发检查脚本
-├─ docker-compose.yml
-├─ Dockerfile
-└─ requirements.txt
 ```
 
 ---
@@ -131,10 +87,23 @@ chmod +x start.sh
 ./start.sh
 ```
 
+启动脚本会自动：
+- 检查并安装依赖
+- 询问是否生成 SSL 证书（用于远程访问）
+- 自动选择 HTTP 或 HTTPS 模式
+- 显示访问地址
+
 3. 访问
 
-- 首页：http://localhost:8000
-- 登录页：http://localhost:8000/login
+- **本地访问**：
+  - HTTP: http://localhost:8000
+  - HTTPS: https://localhost:8000（如已生成证书）
+- **远程访问**：https://您的IP地址:8000（需要 HTTPS）
+
+⚠️ **远程访问注意事项**：
+- 远程使用摄像头/麦克风功能需要 HTTPS
+- 首次访问 HTTPS 时，浏览器会提示证书不受信任，点击"高级"→"继续访问"即可
+- 如需手动生成证书：`python generate_cert.py`
 
 ### 方式二：Docker
 
@@ -143,6 +112,43 @@ docker-compose up --build
 ```
 
 访问：http://localhost:8000
+
+---
+
+## 远程视频功能配置
+
+### 为什么需要 HTTPS？
+
+浏览器安全策略要求通过 HTTPS 才能访问摄像头和麦克风（localhost 除外）。
+
+### 快速配置步骤
+
+1. **生成 SSL 证书**（首次使用）
+
+```bash
+python generate_cert.py
+```
+
+2. **启动服务器**
+
+```bash
+.\start.bat  # Windows
+./start.sh   # Linux/macOS
+```
+
+3. **远程访问**
+
+使用 `https://您的IP地址:8000` 访问系统
+
+4. **接受证书警告**
+
+首次访问时点击"高级"→"继续访问"
+
+5. **授予权限**
+
+进入视频页面时允许摄像头和麦克风权限
+
+详细配置请参考 [REMOTE_ACCESS_GUIDE.md](REMOTE_ACCESS_GUIDE.md)
 
 ---
 
@@ -172,6 +178,11 @@ docker-compose up --build
 - `GET  /api/flights`
 - `POST /api/flights`
 - `PUT  /api/flights/{flight_id}`
+
+### 远程视频
+- `POST /create-room`
+- `GET  /room-info/{room_id}`
+- `WS   /ws/{room_id}/{user_id}`
 
 ### 区块链与维护记录
 - `POST /api/blockchain/records/create`
@@ -246,8 +257,19 @@ python tools/assets/download_js_libs.py
 ### 2) 登录后接口 401
 确认 `access_token` 是否已写入本地存储，并检查请求头/页面登录态。
 
-### 3) 区块链接口报“未初始化”
+### 3) 区块链接口报"未初始化"
 确认启动时 `startup_event` 已执行，且 `backend/blockchain.json`、`contracts.json` 可读。
+
+### 4) 远程访问无法使用摄像头/麦克风
+- 确保使用 HTTPS 访问（`https://` 而非 `http://`）
+- 运行 `python generate_cert.py` 生成 SSL 证书
+- 在浏览器中接受证书警告
+- 授予浏览器摄像头和麦克风权限
+
+### 5) 实时聊天无法同步
+- 检查 WebSocket 连接状态（浏览器控制台）
+- 确认使用正确的协议（HTTP 用 `ws://`，HTTPS 用 `wss://`）
+- 检查网络连接是否稳定
 
 ---
 

@@ -52,4 +52,24 @@ app.include_router(video_router)
 # 启动应用
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    
+    # 检查是否存在SSL证书
+    cert_file = "cert.pem"
+    key_file = "key.pem"
+    
+    if os.path.exists(cert_file) and os.path.exists(key_file):
+        print("🔐 使用HTTPS模式启动...")
+        print("⚠️  首次访问时，浏览器会提示证书不受信任，请点击'高级'→'继续访问'")
+        uvicorn.run(
+            app, 
+            host="0.0.0.0", 
+            port=8000,
+            ssl_keyfile=key_file,
+            ssl_certfile=cert_file
+        )
+    else:
+        print("⚠️  未找到SSL证书，使用HTTP模式启动")
+        print("💡 提示: 远程访问时摄像头/麦克风可能无法使用")
+        print("💡 运行 'python generate_cert.py' 生成SSL证书以启用HTTPS")
+        uvicorn.run(app, host="0.0.0.0", port=8000)

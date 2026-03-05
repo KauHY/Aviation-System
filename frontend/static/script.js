@@ -168,7 +168,8 @@ async function joinRoom() {
         alert('🔗 正在连接到视频系统，请稍候...');
         
         // 连接WebSocket
-        socket = new WebSocket(`ws://${window.location.host}/ws/${roomId}/${userId}`);
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(`${protocol}//${window.location.host}/ws/${roomId}/${userId}`);
         
         // WebSocket连接成功处理
         socket.onopen = function() {
