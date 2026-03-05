@@ -20,7 +20,6 @@ const pcConfig = {
 const joinRoomSection = document.getElementById('join-room');
 const callSection = document.getElementById('call-section');
 const roomIdInput = document.getElementById('room-id');
-const userIdInput = document.getElementById('user-id');
 const joinBtn = document.getElementById('join-btn');
 const createRoomBtn = document.getElementById('create-room-btn');
 const leaveBtn = document.getElementById('leave-btn');
@@ -74,6 +73,10 @@ function init() {
     }
 }
 
+// 全局变量存储选中的用户
+let selectedUsers = [];
+let allUsers = [];
+
 // 创建房间
 async function createRoom() {
     // 检查用户权限
@@ -83,41 +86,158 @@ async function createRoom() {
         return;
     }
     
-    // 弹出房间设置对话框
-    const maxParticipants = prompt('请设置房间最大人数（1-10）:', '5');
-    if (!maxParticipants || isNaN(maxParticipants) || parseInt(maxParticipants) < 1 || parseInt(maxParticipants) > 10) {
-        alert('请输入有效的房间人数');
+    // 加载用户列表
+    await loadAllUsers();
+    
+    // 显示模态框
+    const modal = document.getElementById('create-room-modal');
+    modal.classList.add('show');
+    
+    // 重置选择
+    selectedUsers = [];
+    updateSelectedCount();
+}
+
+// 加载所有用户
+async function loadAllUsers() {
+    try {
+        const response = await fetch('/api/system/users');
+        if (response.ok) {
+            const data = await response.json();
+            allUsers = data.users || [];
+            renderUserList(allUsers);
+        }
+    } catch (error) {
+        console.error('加载用户列表失败:', error);
+        // 如果 API 失败，使用 localStorage 作为后备
+        const users = JSON.parse(localStorage.getItem('users')) || {};
+        allUsers = Object.keys(users).map(username => ({
+            username: username,
+            role: users[username].role || 'technician',
+            employee_id: users[username].employee_id || username
+        }));
+        renderUserList(allUsers);
+    }
+}
+
+// 渲染用户列表
+function renderUserList(users) {
+    const userList = document.getElementById('user-list');
+    if (!userList) return;
+    
+    if (users.length === 0) {
+        userList.innerHTML = '<div style="padding: 20px; text-align: center; color: #718096;">暂无用户</div>';
         return;
     }
     
-    // 获取所有用户列表
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    const userRoles = JSON.parse(localStorage.getItem('userRoles')) || {};
-    const userList = Object.keys(users).map(username => {
-        let roleText = '技术人员';
-        if (userRoles[username] === 'manager') {
-            roleText = '管理人员';
-        } else if (userRoles[username] === 'admin') {
-            roleText = '总负责人';
+    userList.innerHTML = users.map(user => {
+        const roleText = getRoleText(user.role);
+        const isSelected = selectedUsers.includes(user.username);
+        return `
+            <div class="user-item ${isSelected ? 'selected' : ''}" onclick="toggleUser('${user.username}')">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleUser('${user.username}')">
+                <div class="user-info">
+                    <div class="name">${user.username}</div>
+                    <div class="details">${roleText} | 工号: ${user.employee_id || user.username}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 获取角色文本
+function getRoleText(role) {
+    const roleMap = {
+        'admin': '总负责人',
+        'manager': '管理人员',
+        'technician': '技术人员'
+    };
+    return roleMap[role] || '技术人员';
+}
+
+// 切换用户选择
+function toggleUser(username) {
+    const index = selectedUsers.indexOf(username);
+    if (index > -1) {
+        selectedUsers.splice(index, 1);
+    } else {
+        if (selectedUsers.length >= 10) {
+            alert('最多只能选择 10 人');
+            return;
         }
-        return `${username} (${roleText})`;
+        selectedUsers.push(username);
+    }
+    
+    updateSelectedCount();
+    renderUserList(allUsers);
+}
+
+// 更新选中计数
+function updateSelectedCount() {
+    const countElement = document.getElementById('selected-count');
+    if (countElement) {
+        countElement.textContent = selectedUsers.length;
+    }
+    
+    const createBtn = document.getElementById('confirm-create-btn');
+    if (createBtn) {
+        createBtn.disabled = selectedUsers.length === 0;
+    }
+}
+
+// 过滤用户
+function filterUsers() {
+    const searchInput = document.getElementById('user-search');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+        renderUserList(allUsers);
+        return;
+    }
+    
+    const filtered = allUsers.filter(user => {
+        return user.username.toLowerCase().includes(searchTerm) ||
+               (user.employee_id && user.employee_id.toLowerCase().includes(searchTerm));
     });
     
-    // 邀请用户
-    const inviteUsers = prompt(`请输入要邀请的用户（用逗号分隔，留空表示不邀请）:\n${userList.join('\n')}`);
+    renderUserList(filtered);
+}
+
+// 关闭模态框
+function closeCreateRoomModal() {
+    const modal = document.getElementById('create-room-modal');
+    modal.classList.remove('show');
+    selectedUsers = [];
+    const searchInput = document.getElementById('user-search');
+    if (searchInput) searchInput.value = '';
+}
+
+// 确认创建房间
+async function confirmCreateRoom() {
+    if (selectedUsers.length === 0) {
+        alert('请至少选择一个与会人员');
+        return;
+    }
     
     try {
         const response = await fetch('/create-room', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                invited_users: selectedUsers,
+                max_participants: 10
+            })
         });
         
         if (response.ok) {
             const data = await response.json();
             roomIdInput.value = data.room_id;
-            alert(`房间创建成功！\n房间ID: ${data.room_id}\n最大人数: ${maxParticipants}\n${inviteUsers ? `邀请用户: ${inviteUsers}` : '未邀请用户'}`);
+            closeCreateRoomModal();
+            alert(`房间创建成功！\n房间ID: ${data.room_id}\n邀请人员: ${selectedUsers.join(', ')}`);
         } else {
             throw new Error('创建房间失败');
         }
@@ -130,15 +250,46 @@ async function createRoom() {
 // 加入房间
 async function joinRoom() {
     roomId = roomIdInput.value.trim();
-    userId = userIdInput.value.trim();
     
-    if (!roomId || !userId) {
-        alert('请输入房间ID和用户ID');
+    // 自动获取当前用户
+    userId = localStorage.getItem('currentUser');
+    
+    if (!roomId) {
+        alert('请输入房间ID');
+        return;
+    }
+    
+    if (!userId) {
+        alert('未检测到登录信息，请重新登录');
+        window.location.href = '/login';
         return;
     }
     
     try {
-        // 显示权限请求提示
+        // 验证房间访问权限
+        const verifyResponse = await fetch('/verify-room-access', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                room_id: roomId,
+                username: userId
+            })
+        });
+        
+        if (!verifyResponse.ok) {
+            throw new Error('验证请求失败');
+        }
+        
+        const verifyData = await verifyResponse.json();
+        
+        if (!verifyData.allowed) {
+            alert(verifyData.reason || '您没有权限加入此房间');
+            return;
+        }
+        
+        // 权限验证通过，继续加入房间
         alert('🔍 正在请求摄像头和麦克风权限，请在浏览器提示中允许使用这些设备。');
         
         // 尝试获取视频和音频
@@ -214,8 +365,8 @@ async function joinRoom() {
         };
         
     } catch (error) {
-        console.error('获取媒体设备失败:', error);
-        let errorMessage = '无法访问媒体设备: ' + error.message;
+        console.error('加入房间失败:', error);
+        let errorMessage = '无法加入房间: ' + error.message;
         if (error.name === 'NotAllowedError') {
             errorMessage += '\n请在浏览器地址栏左侧的锁图标中检查权限设置，确保允许使用摄像头和麦克风。';
         }
@@ -332,6 +483,12 @@ function handleSocketError(error) {
 
 // 处理用户加入
 async function handleUserJoined(user_id) {
+    // 不为自己创建远程视图
+    if (user_id === userId) {
+        console.log('跳过为自己创建远程视图');
+        return;
+    }
+    
     addParticipant(user_id);
     
     // 创建对等连接
@@ -471,6 +628,12 @@ function createPeerConnection(user_id) {
 function addRemoteVideo(user_id, stream) {
     console.log('添加远程视频:', user_id, stream);
     
+    // 不为自己创建远程视图
+    if (user_id === userId) {
+        console.log('跳过为自己创建远程视图');
+        return;
+    }
+    
     // 检查remoteVideos元素是否存在
     if (!remoteVideos) {
         console.error('remoteVideos元素不存在');
@@ -482,16 +645,17 @@ function addRemoteVideo(user_id, stream) {
     if (!videoElement) {
         console.log('创建新的远程视频元素:', user_id);
         const videoWrapper = document.createElement('div');
-        videoWrapper.className = 'video-wrapper';
+        videoWrapper.className = 'video-wrapper remote-video';
+        videoWrapper.dataset.userId = user_id;
         videoWrapper.innerHTML = `
             <h3>远程视图 - ${user_id}</h3>
             <div class="video-status online">在线</div>
             <video id="remote-${user_id}" autoplay></video>
         `;
         
-        // 添加双击事件监听器
-        videoWrapper.addEventListener('dblclick', () => {
-            toggleVideoMain(videoWrapper);
+        // 添加点击事件监听器，实现与本地视图对调
+        videoWrapper.addEventListener('click', () => {
+            swapWithLocalVideo(videoWrapper);
         });
         
         remoteVideos.appendChild(videoWrapper);
@@ -502,10 +666,10 @@ function addRemoteVideo(user_id, stream) {
             return;
         }
         
-        // 添加双击事件监听器到视频元素
-        videoElement.addEventListener('dblclick', (e) => {
+        // 添加点击事件监听器到视频元素
+        videoElement.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleVideoMain(videoWrapper);
+            swapWithLocalVideo(videoWrapper);
         });
     }
     
@@ -521,58 +685,63 @@ function addRemoteVideo(user_id, stream) {
     videoElement.onplaying = () => {
         console.log('远程视频开始播放:', user_id);
     };
-    
-    // 初始化布局
-    updateVideoLayout();
 }
 
-// 切换视频为主视频
-function toggleVideoMain(videoWrapper) {
-    console.log('切换主视频:', videoWrapper);
+// 与本地视图对调
+function swapWithLocalVideo(remoteWrapper) {
+    console.log('与本地视图对调');
     
-    // 移除所有视频的main类
-    const allVideos = document.querySelectorAll('.video-wrapper');
-    allVideos.forEach(video => {
-        video.classList.remove('main');
-    });
-    
-    // 为点击的视频添加main类
-    videoWrapper.classList.add('main');
-    
-    // 更新布局
-    updateVideoLayout();
-}
-
-// 更新视频布局
-function updateVideoLayout() {
-    console.log('更新视频布局');
-    
-    // 检查是否存在主视频
-    const mainVideo = document.querySelector('.video-wrapper.main');
-    const allVideos = document.querySelectorAll('.video-wrapper');
-    
-    if (allVideos.length > 1 && !mainVideo) {
-        // 如果没有主视频，将第一个视频设为主视频
-        allVideos[0].classList.add('main');
+    const localWrapper = document.querySelector('.video-wrapper:not(.remote-video)');
+    if (!localWrapper) {
+        console.error('未找到本地视图容器');
+        return;
     }
+    
+    // 获取两个容器的父元素
+    const localParent = localWrapper.parentElement;
+    const remoteParent = remoteWrapper.parentElement;
+    
+    // 获取位置信息
+    const localNextSibling = localWrapper.nextSibling;
+    const remoteNextSibling = remoteWrapper.nextSibling;
+    
+    // 交换位置
+    if (localNextSibling) {
+        remoteParent.insertBefore(localWrapper, remoteNextSibling);
+    } else {
+        remoteParent.appendChild(localWrapper);
+    }
+    
+    if (remoteNextSibling) {
+        localParent.insertBefore(remoteWrapper, localNextSibling);
+    } else {
+        localParent.appendChild(remoteWrapper);
+    }
+    
+    // 添加视觉反馈
+    remoteWrapper.style.transform = 'scale(0.95)';
+    localWrapper.style.transform = 'scale(0.95)';
+    
+    setTimeout(() => {
+        remoteWrapper.style.transform = '';
+        localWrapper.style.transform = '';
+    }, 200);
 }
 
-// 为本地视频添加双击事件
+// 为本地视频添加点击事件
 function setupLocalVideoDoubleClick() {
-    const localVideoWrapper = document.querySelector('.video-wrapper');
+    const localVideoWrapper = document.querySelector('.video-wrapper:not(.remote-video)');
     if (localVideoWrapper) {
-        localVideoWrapper.addEventListener('dblclick', () => {
-            toggleVideoMain(localVideoWrapper);
-        });
-        
-        const localVideo = document.getElementById('local-video');
-        if (localVideo) {
-            localVideo.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                toggleVideoMain(localVideoWrapper);
-            });
-        }
+        // 添加提示样式
+        localVideoWrapper.style.cursor = 'default';
+        localVideoWrapper.title = '本地视图';
     }
+    
+    // 为所有远程视图添加提示
+    document.querySelectorAll('.remote-video').forEach(wrapper => {
+        wrapper.style.cursor = 'pointer';
+        wrapper.title = '点击与本地视图对调';
+    });
 }
 
 // 移除远程视频
