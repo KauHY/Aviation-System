@@ -634,18 +634,16 @@ function addRemoteVideo(user_id, stream) {
         return;
     }
     
-    // 检查remoteVideos元素是否存在
     if (!remoteVideos) {
         console.error('remoteVideos元素不存在');
         return;
     }
     
-    // 检查是否已存在该用户的视频
     let videoElement = document.getElementById(`remote-${user_id}`);
     if (!videoElement) {
         console.log('创建新的远程视频元素:', user_id);
         const videoWrapper = document.createElement('div');
-        videoWrapper.className = 'video-wrapper remote-video';
+        videoWrapper.className = 'video-wrapper';
         videoWrapper.dataset.userId = user_id;
         videoWrapper.innerHTML = `
             <h3>远程视图 - ${user_id}</h3>
@@ -653,9 +651,8 @@ function addRemoteVideo(user_id, stream) {
             <video id="remote-${user_id}" autoplay></video>
         `;
         
-        // 添加点击事件监听器，实现与本地视图对调
         videoWrapper.addEventListener('click', () => {
-            swapWithLocalVideo(videoWrapper);
+            openFullscreen(user_id, `远程视图 - ${user_id}`);
         });
         
         remoteVideos.appendChild(videoWrapper);
@@ -665,83 +662,58 @@ function addRemoteVideo(user_id, stream) {
             console.error('无法创建视频元素:', user_id);
             return;
         }
-        
-        // 添加点击事件监听器到视频元素
-        videoElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            swapWithLocalVideo(videoWrapper);
-        });
     }
     
     console.log('设置视频流:', user_id, stream);
     videoElement.srcObject = stream;
     
-    // 添加错误处理
     videoElement.onerror = (error) => {
         console.error('视频元素错误:', error);
     };
     
-    // 添加播放事件
     videoElement.onplaying = () => {
         console.log('远程视频开始播放:', user_id);
     };
 }
 
-// 与本地视图对调
-function swapWithLocalVideo(remoteWrapper) {
-    console.log('与本地视图对调');
+// 打开全屏放大
+function openFullscreen(videoId, title) {
+    const modal = document.getElementById('fullscreen-modal');
+    const fullscreenVideo = document.getElementById('fullscreen-video');
+    const fullscreenTitle = document.getElementById('fullscreen-title');
     
-    const localWrapper = document.querySelector('.video-wrapper:not(.remote-video)');
-    if (!localWrapper) {
-        console.error('未找到本地视图容器');
-        return;
-    }
-    
-    // 获取两个容器的父元素
-    const localParent = localWrapper.parentElement;
-    const remoteParent = remoteWrapper.parentElement;
-    
-    // 获取位置信息
-    const localNextSibling = localWrapper.nextSibling;
-    const remoteNextSibling = remoteWrapper.nextSibling;
-    
-    // 交换位置
-    if (localNextSibling) {
-        remoteParent.insertBefore(localWrapper, remoteNextSibling);
+    // 获取原始视频流
+    let sourceVideo;
+    if (videoId === 'local') {
+        sourceVideo = document.getElementById('local-video');
     } else {
-        remoteParent.appendChild(localWrapper);
+        sourceVideo = document.getElementById(`remote-${videoId}`);
     }
     
-    if (remoteNextSibling) {
-        localParent.insertBefore(remoteWrapper, localNextSibling);
-    } else {
-        localParent.appendChild(remoteWrapper);
+    if (sourceVideo && sourceVideo.srcObject) {
+        fullscreenVideo.srcObject = sourceVideo.srcObject;
+        fullscreenTitle.textContent = title;
+        modal.classList.add('show');
     }
+}
+
+// 关闭全屏
+function closeFullscreen() {
+    const modal = document.getElementById('fullscreen-modal');
+    const fullscreenVideo = document.getElementById('fullscreen-video');
     
-    // 添加视觉反馈
-    remoteWrapper.style.transform = 'scale(0.95)';
-    localWrapper.style.transform = 'scale(0.95)';
-    
-    setTimeout(() => {
-        remoteWrapper.style.transform = '';
-        localWrapper.style.transform = '';
-    }, 200);
+    modal.classList.remove('show');
+    fullscreenVideo.srcObject = null;
 }
 
 // 为本地视频添加点击事件
 function setupLocalVideoDoubleClick() {
     const localVideoWrapper = document.querySelector('.video-wrapper:not(.remote-video)');
     if (localVideoWrapper) {
-        // 添加提示样式
-        localVideoWrapper.style.cursor = 'default';
-        localVideoWrapper.title = '本地视图';
+        localVideoWrapper.addEventListener('click', () => {
+            openFullscreen('local', '本地视图');
+        });
     }
-    
-    // 为所有远程视图添加提示
-    document.querySelectorAll('.remote-video').forEach(wrapper => {
-        wrapper.style.cursor = 'pointer';
-        wrapper.title = '点击与本地视图对调';
-    });
 }
 
 // 移除远程视频

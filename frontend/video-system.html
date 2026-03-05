@@ -199,20 +199,17 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             position: relative;
             transition: all 0.3s ease;
-        }
-        
-        .video-wrapper.remote-video {
             cursor: pointer;
         }
         
-        .video-wrapper.remote-video:hover {
+        .video-wrapper:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
             border: 2px solid #2b6cb0;
         }
         
-        .video-wrapper.remote-video::after {
-            content: '🔄 点击对调';
+        .video-wrapper::after {
+            content: '🔍 点击放大';
             position: absolute;
             bottom: 30px;
             left: 50%;
@@ -228,7 +225,7 @@
             z-index: 10;
         }
         
-        .video-wrapper.remote-video:hover::after {
+        .video-wrapper:hover::after {
             opacity: 1;
         }
 
@@ -652,6 +649,76 @@
             cursor: not-allowed;
         }
         
+        /* 全屏放大模态框 */
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .fullscreen-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .fullscreen-video-wrapper {
+            width: 90%;
+            max-width: 1200px;
+            background: #1a202c;
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .fullscreen-video-wrapper h3 {
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .fullscreen-video-wrapper video {
+            width: 100%;
+            height: 70vh;
+            border-radius: 8px;
+        }
+        
+        .fullscreen-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 32px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .fullscreen-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+        
+        .fullscreen-hint {
+            color: white;
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
         /* 响应式设计 */
         @media (max-width: 768px) {
             .navbar {
@@ -807,6 +874,16 @@
         </div>
     </div>
     
+    <!-- 全屏放大模态框 -->
+    <div id="fullscreen-modal" class="fullscreen-modal">
+        <div class="fullscreen-video-wrapper">
+            <button class="fullscreen-close" onclick="closeFullscreen()">&times;</button>
+            <h3 id="fullscreen-title">视图</h3>
+            <video id="fullscreen-video" autoplay></video>
+        </div>
+        <div class="fullscreen-hint">点击关闭按钮或按 ESC 键退出全屏</div>
+    </div>
+    
     <!-- 创建房间模态框 -->
     <div id="create-room-modal" class="modal">
         <div class="modal-content">
@@ -852,9 +929,14 @@
         // ESC 键关闭模态框
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                const modal = document.getElementById('create-room-modal');
-                if (modal && modal.classList.contains('show')) {
+                const createModal = document.getElementById('create-room-modal');
+                if (createModal && createModal.classList.contains('show')) {
                     closeCreateRoomModal();
+                }
+                
+                const fullscreenModal = document.getElementById('fullscreen-modal');
+                if (fullscreenModal && fullscreenModal.classList.contains('show')) {
+                    closeFullscreen();
                 }
             }
         });
