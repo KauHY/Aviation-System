@@ -577,6 +577,24 @@
             border-left: 4px solid #2b6cb0;
         }
         
+        .user-item[disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #f7fafc;
+        }
+        
+        .user-item[disabled]:hover {
+            background: #f7fafc;
+        }
+        
+        .user-item[disabled] .user-info .name {
+            color: #a0aec0;
+        }
+        
+        .user-item[disabled] .user-info .details {
+            color: #cbd5e0;
+        }
+        
         .user-item input[type="checkbox"] {
             margin-right: 12px;
             width: 18px;
@@ -829,7 +847,11 @@
             <div id="call-section" class="hidden">
                 <div class="call-header">
                     <h2>检修任务: <span id="current-room"></span></h2>
-                    <button id="leave-btn" class="danger">结束任务</button>
+                    <div>
+                        <button id="add-member-btn" class="success hidden" style="margin-right: 10px;">➕ 添加成员</button>
+                        <button id="end-task-btn" class="danger hidden" style="margin-right: 10px;">结束任务</button>
+                        <button id="leave-btn" class="secondary">退出任务</button>
+                    </div>
                 </div>
                 
                 <div class="video-container">

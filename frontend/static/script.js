@@ -22,6 +22,8 @@ const callSection = document.getElementById('call-section');
 const roomIdInput = document.getElementById('room-id');
 const joinBtn = document.getElementById('join-btn');
 const createRoomBtn = document.getElementById('create-room-btn');
+const addMemberBtn = document.getElementById('add-member-btn');
+const endTaskBtn = document.getElementById('end-task-btn');
 const leaveBtn = document.getElementById('leave-btn');
 const localVideo = document.getElementById('local-video');
 const remoteVideos = document.getElementById('remote-videos');
@@ -45,6 +47,12 @@ function init() {
     }
     if (createRoomBtn) {
         createRoomBtn.addEventListener('click', createRoom);
+    }
+    if (addMemberBtn) {
+        addMemberBtn.addEventListener('click', openAddMemberModal);
+    }
+    if (endTaskBtn) {
+        endTaskBtn.addEventListener('click', endTask);
     }
     if (leaveBtn) {
         leaveBtn.addEventListener('click', leaveRoom);
@@ -76,6 +84,9 @@ function init() {
 // 全局变量存储选中的用户
 let selectedUsers = [];
 let allUsers = [];
+let isCreator = false;
+let currentRoomCreator = '';
+let currentInvitedUsers = []; // 当前房间已邀请的用户
 
 // 创建房间
 async function createRoom() {
@@ -93,9 +104,11 @@ async function createRoom() {
     const modal = document.getElementById('create-room-modal');
     modal.classList.add('show');
     
-    // 重置选择
-    selectedUsers = [];
+    // 重置选择，默认选中创建者
+    const currentUser = localStorage.getItem('currentUser');
+    selectedUsers = [currentUser];
     updateSelectedCount();
+    renderUserList(allUsers);
 }
 
 // 加载所有用户
@@ -125,6 +138,8 @@ function renderUserList(users) {
     const userList = document.getElementById('user-list');
     if (!userList) return;
     
+    const currentUser = localStorage.getItem('currentUser');
+    
     if (users.length === 0) {
         userList.innerHTML = '<div style="padding: 20px; text-align: center; color: #718096;">暂无用户</div>';
         return;
@@ -133,12 +148,17 @@ function renderUserList(users) {
     userList.innerHTML = users.map(user => {
         const roleText = getRoleText(user.role);
         const isSelected = selectedUsers.includes(user.username);
+        const isCurrentUser = user.username === currentUser;
+        const isAlreadyInvited = currentInvitedUsers.includes(user.username);
+        const disabled = isCurrentUser || isAlreadyInvited ? 'disabled' : '';
+        const disabledReason = isCurrentUser ? ' (我)' : isAlreadyInvited ? ' (已邀请)' : '';
+        
         return `
-            <div class="user-item ${isSelected ? 'selected' : ''}" onclick="toggleUser('${user.username}')">
-                <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleUser('${user.username}')">
+            <div class="user-item ${isSelected ? 'selected' : ''} ${disabled}" onclick="${disabled ? '' : "toggleUser('" + user.username + "')"}">  
+                <input type="checkbox" ${isSelected ? 'checked' : ''} ${disabled} onclick="event.stopPropagation(); ${disabled ? '' : "toggleUser('" + user.username + "')"}">  
                 <div class="user-info">
-                    <div class="name">${user.username}</div>
-                    <div class="details">${roleText} | 工号: ${user.employee_id || user.username}</div>
+                    <div class="name" style="${isAlreadyInvited || isCurrentUser ? 'color: #a0aec0;' : ''}">${user.username}${disabledReason}</div>
+                    <div class="details" style="${isAlreadyInvited || isCurrentUser ? 'color: #cbd5e0;' : ''}">${roleText} | 工号: ${user.employee_id || user.username}</div>
                 </div>
             </div>
         `;
@@ -157,6 +177,12 @@ function getRoleText(role) {
 
 // 切换用户选择
 function toggleUser(username) {
+    const currentUser = localStorage.getItem('currentUser');
+    // 创建者不能取消选择自己，已邀请的用户不能选择
+    if (username === currentUser || currentInvitedUsers.includes(username)) {
+        return;
+    }
+    
     const index = selectedUsers.indexOf(username);
     if (index > -1) {
         selectedUsers.splice(index, 1);
@@ -181,6 +207,7 @@ function updateSelectedCount() {
     
     const createBtn = document.getElementById('confirm-create-btn');
     if (createBtn) {
+        // 至少需要选中创建者自己
         createBtn.disabled = selectedUsers.length === 0;
     }
 }
@@ -216,6 +243,8 @@ function closeCreateRoomModal() {
 
 // 确认创建房间
 async function confirmCreateRoom() {
+    const currentUser = localStorage.getItem('currentUser');
+    
     if (selectedUsers.length === 0) {
         alert('请至少选择一个与会人员');
         return;
@@ -228,6 +257,7 @@ async function confirmCreateRoom() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                creator: currentUser,
                 invited_users: selectedUsers,
                 max_participants: 10
             })
@@ -289,6 +319,9 @@ async function joinRoom() {
             return;
         }
         
+        // 保存是否为创建者
+        isCreator = verifyData.is_creator || false;
+        
         // 权限验证通过，继续加入房间
         alert('🔍 正在请求摄像头和麦克风权限，请在浏览器提示中允许使用这些设备。');
         
@@ -332,6 +365,12 @@ async function joinRoom() {
             
             // 添加本地用户到参会者列表
             addParticipant(userId);
+            
+            // 如果是创建者，显示添加成员和结束任务按钮
+            if (isCreator) {
+                if (addMemberBtn) addMemberBtn.classList.remove('hidden');
+                if (endTaskBtn) endTaskBtn.classList.remove('hidden');
+            }
             
             // 为本地视频添加双击事件
             setTimeout(() => {
@@ -857,6 +896,134 @@ window.onload = function() {
     init();
     setupFlightSearch();
 };
+
+// 打开添加成员模态框
+async function openAddMemberModal() {
+    // 获取当前房间信息
+    try {
+        const response = await fetch(`/room-info/${roomId}`);
+        if (response.ok) {
+            const roomData = await response.json();
+            currentInvitedUsers = roomData.invited_users || [];
+        }
+    } catch (error) {
+        console.error('获取房间信息失败:', error);
+        currentInvitedUsers = [];
+    }
+    
+    // 加载用户列表
+    await loadAllUsers();
+    
+    // 显示模态框
+    const modal = document.getElementById('create-room-modal');
+    const modalTitle = modal.querySelector('.modal-header h3');
+    const confirmBtn = document.getElementById('confirm-create-btn');
+    
+    modalTitle.textContent = '添加房间成员';
+    confirmBtn.textContent = '确认添加';
+    confirmBtn.onclick = confirmAddMembers;
+    
+    modal.classList.add('show');
+    
+    // 重置选择
+    selectedUsers = [];
+    updateSelectedCount();
+    renderUserList(allUsers);
+}
+
+// 确认添加成员
+async function confirmAddMembers() {
+    if (selectedUsers.length === 0) {
+        alert('请至少选择一个成员');
+        return;
+    }
+    
+    const currentUser = localStorage.getItem('currentUser');
+    
+    try {
+        const response = await fetch('/add-room-participants', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                room_id: roomId,
+                creator: currentUser,
+                new_users: selectedUsers
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                alert(data.message);
+                closeAddMemberModal();
+            } else {
+                alert(data.message || '添加成员失败');
+            }
+        } else {
+            throw new Error('添加成员失败');
+        }
+    } catch (error) {
+        console.error('添加成员失败:', error);
+        alert('添加成员失败，请重试');
+    }
+}
+
+// 关闭添加成员模态框
+function closeAddMemberModal() {
+    const modal = document.getElementById('create-room-modal');
+    const modalTitle = modal.querySelector('.modal-header h3');
+    const confirmBtn = document.getElementById('confirm-create-btn');
+    
+    // 恢复原始状态
+    modalTitle.textContent = '创建新任务房间';
+    confirmBtn.textContent = '创建房间';
+    confirmBtn.onclick = confirmCreateRoom;
+    
+    modal.classList.remove('show');
+    selectedUsers = [];
+    currentInvitedUsers = []; // 清空已邀请用户列表
+    const searchInput = document.getElementById('user-search');
+    if (searchInput) searchInput.value = '';
+}
+
+// 结束任务（仅创建者）
+async function endTask() {
+    if (!confirm('确认结束任务？所有成员将被移出房间，房间将被关闭。')) {
+        return;
+    }
+    
+    const currentUser = localStorage.getItem('currentUser');
+    
+    try {
+        const response = await fetch('/close-room', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                room_id: roomId,
+                creator: currentUser
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                alert(data.message);
+                leaveRoom();
+            } else {
+                alert(data.message || '结束任务失败');
+            }
+        } else {
+            throw new Error('结束任务失败');
+        }
+    } catch (error) {
+        console.error('结束任务失败:', error);
+        alert('结束任务失败，请重试');
+    }
+}
 
 // 航班查询功能
 function setupFlightSearch() {

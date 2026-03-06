@@ -9,6 +9,7 @@ router = APIRouter()
 
 
 class CreateRoomRequest(BaseModel):
+    creator: str
     invited_users: Optional[List[str]] = []
     max_participants: Optional[int] = 10
 
@@ -20,6 +21,7 @@ async def create_room(request: CreateRoomRequest = Body(...)):
     
     app_state.rooms[room_id] = {
         "created_at": "now",
+        "creator": request.creator,
         "participants": [],
         "invited_users": request.invited_users,
         "max_participants": request.max_participants
@@ -27,6 +29,7 @@ async def create_room(request: CreateRoomRequest = Body(...)):
     
     return {
         "room_id": room_id,
+        "creator": request.creator,
         "invited_users": request.invited_users,
         "max_participants": request.max_participants
     }
@@ -79,18 +82,95 @@ async def verify_room_access(room_id: str = Body(...), username: str = Body(...)
     
     room_data = app_state.rooms[room_id]
     invited_users = room_data.get("invited_users", [])
+    creator = room_data.get("creator", "")
+    
+    # 创建者始终可以加入
+    if username == creator:
+        return {"allowed": True, "is_creator": True}
     
     # 如果没有邀请列表，允许所有人加入
     if not invited_users:
-        return {"allowed": True}
+        return {"allowed": True, "is_creator": False}
     
     # 检查用户是否在邀请列表中
     if username in invited_users:
-        return {"allowed": True}
+        return {"allowed": True, "is_creator": False}
     
     return {
         "allowed": False,
+        "is_creator": False,
         "reason": "您没有权限加入此房间，请联系房间创建者"
+    }
+
+
+@router.post("/add-room-participants")
+async def add_room_participants(room_id: str = Body(...), creator: str = Body(...), new_users: List[str] = Body(...)):
+    """添加新成员到房间"""
+    # 检查房间是否存在
+    if room_id not in app_state.rooms:
+        return {
+            "success": False,
+            "message": "房间不存在"
+        }
+    
+    room_data = app_state.rooms[room_id]
+    
+    # 验证是否为创建者
+    if room_data.get("creator") != creator:
+        return {
+            "success": False,
+            "message": "只有房间创建者可以添加成员"
+        }
+    
+    # 添加新用户到邀请列表
+    invited_users = room_data.get("invited_users", [])
+    for user in new_users:
+        if user not in invited_users:
+            invited_users.append(user)
+    
+    room_data["invited_users"] = invited_users
+    
+    return {
+        "success": True,
+        "invited_users": invited_users,
+        "message": f"成功添加 {len(new_users)} 名成员"
+    }
+
+
+@router.post("/close-room")
+async def close_room(room_id: str = Body(...), creator: str = Body(...)):
+    """关闭房间（仅创建者）"""
+    if room_id not in app_state.rooms:
+        return {
+            "success": False,
+            "message": "房间不存在"
+        }
+    
+    room_data = app_state.rooms[room_id]
+    
+    # 验证是否为创建者
+    if room_data.get("creator") != creator:
+        return {
+            "success": False,
+            "message": "只有房间创建者可以结束任务"
+        }
+    
+    # 删除房间
+    del app_state.rooms[room_id]
+    
+    # 断开所有连接
+    if room_id in app_state.manager.active_connections:
+        connections = list(app_state.manager.active_connections[room_id].values())
+        for ws in connections:
+            try:
+                await ws.close()
+            except:
+                pass
+        del app_state.manager.active_connections[room_id]
+    
+    return {
+        "success": True,
+        "message": "任务已结束，房间已关闭"
     }
 
 
