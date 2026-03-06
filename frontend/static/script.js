@@ -480,6 +480,13 @@ function handleSocketMessage(event) {
         console.log('收到消息:', message);
         
         switch (message.type) {
+            case 'existing_users':
+                console.log('收到已有用户列表:', message.users);
+                // 添加所有已有用户到参会者列表
+                message.users.forEach(user => {
+                    addParticipant(user);
+                });
+                break;
             case 'user_joined':
                 console.log('用户加入:', message.user_id);
                 handleUserJoined(message.user_id);

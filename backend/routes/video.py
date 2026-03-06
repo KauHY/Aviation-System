@@ -178,6 +178,19 @@ async def close_room(room_id: str = Body(...), creator: str = Body(...)):
 async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
     await app_state.manager.connect(websocket, room_id, user_id)
 
+    # 获取房间已有用户列表（不包括当前用户）
+    existing_users = []
+    if room_id in app_state.manager.active_connections:
+        existing_users = [uid for uid in app_state.manager.active_connections[room_id].keys() if uid != user_id]
+    
+    # 发送已有用户列表给新用户
+    if existing_users:
+        await websocket.send_json({
+            "type": "existing_users",
+            "users": existing_users
+        })
+
+    # 广播新用户加入
     await app_state.manager.broadcast({
         "type": "user_joined",
         "user_id": user_id
